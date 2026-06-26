@@ -112,3 +112,20 @@ export { ErrorState, type ErrorStateProps } from './error-state';
 
 // --- Toast ---
 export { Toaster } from './sonner';
+
+// --- Typography ---
+export {
+  H1,
+  H2,
+  H3,
+  H4,
+  Lead,
+  Text,
+  Muted,
+  Small,
+  LabelText,
+} from './typography';
+
+// --- Bottom sheet & theme ---
+export { BottomSheet, type BottomSheetProps } from './bottom-sheet';
+export { ThemeToggle } from './theme-toggle';
