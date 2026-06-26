@@ -1,111 +1,289 @@
+@import 'tailwindcss';
+@import 'tw-animate-css';
+
+/* =========================================================================
+   BlockSeBlock Design System — Tokens
+   Tailwind v4 CSS-first config. Semantic tokens are CSS variables so dark
+   mode works by toggling a class on <html>. Brand accent follows the
+   existing scaffold violet (#aa3bff), ramped to a full scale.
+   ========================================================================= */
+
+@custom-variant dark (&:is(.dark *));
+
 :root {
-  --text: #6b6375;
-  --text-h: #08060d;
-  --bg: #fff;
-  --border: #e5e4e7;
-  --code-bg: #f4f3ec;
-  --accent: #aa3bff;
-  --accent-bg: rgba(170, 59, 255, 0.1);
-  --accent-border: rgba(170, 59, 255, 0.5);
-  --social-bg: rgba(244, 243, 236, 0.5);
-  --shadow:
-    rgba(0, 0, 0, 0.1) 0 10px 15px -3px, rgba(0, 0, 0, 0.05) 0 4px 6px -2px;
+  color-scheme: light;
 
-  --sans: system-ui, 'Segoe UI', Roboto, sans-serif;
-  --heading: system-ui, 'Segoe UI', Roboto, sans-serif;
-  --mono: ui-monospace, Consolas, monospace;
+  /* --- Base surfaces --- */
+  --background: oklch(0.99 0.003 285);
+  --foreground: oklch(0.21 0.02 285);
 
-  font: 18px/145% var(--sans);
-  letter-spacing: 0.18px;
-  color-scheme: light dark;
-  color: var(--text);
-  background: var(--bg);
-  font-synthesis: none;
-  text-rendering: optimizeLegibility;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.21 0.02 285);
 
-  @media (max-width: 1024px) {
-    font-size: 16px;
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.21 0.02 285);
+
+  /* --- Brand (violet) --- */
+  --primary: oklch(0.55 0.24 295);
+  --primary-foreground: oklch(0.98 0.01 295);
+
+  /* --- Secondary / muted --- */
+  --secondary: oklch(0.96 0.01 285);
+  --secondary-foreground: oklch(0.28 0.03 285);
+  --muted: oklch(0.96 0.01 285);
+  --muted-foreground: oklch(0.52 0.02 285);
+
+  /* --- Feedback --- */
+  --accent: oklch(0.95 0.04 295);
+  --accent-foreground: oklch(0.34 0.15 295);
+  --destructive: oklch(0.58 0.24 25);
+  --destructive-foreground: oklch(0.98 0.01 25);
+  --success: oklch(0.62 0.17 150);
+  --success-foreground: oklch(0.98 0.02 150);
+  --warning: oklch(0.75 0.16 70);
+  --warning-foreground: oklch(0.28 0.06 70);
+  --info: oklch(0.62 0.15 240);
+  --info-foreground: oklch(0.98 0.01 240);
+
+  --border: oklch(0.92 0.01 285);
+  --input: oklch(0.92 0.01 285);
+  --ring: oklch(0.55 0.24 295);
+
+  /* --- Civic issue palettes (status / severity) --- */
+  --status-reported: oklch(0.62 0.15 240); /* blue - just logged */
+  --status-reported-foreground: oklch(0.98 0.01 240);
+  --status-verified: oklch(0.7 0.13 200); /* cyan - community-confirmed */
+  --status-verified-foreground: oklch(0.16 0.02 200);
+  --status-in_progress: oklch(0.75 0.16 70); /* amber - being fixed */
+  --status-in_progress-foreground: oklch(0.28 0.06 70);
+  --status-resolved: oklch(0.62 0.17 150); /* green - done */
+  --status-resolved-foreground: oklch(0.98 0.02 150);
+  --status-rejected: oklch(0.58 0.21 25); /* red - dismissed */
+  --status-rejected-foreground: oklch(0.98 0.01 25);
+
+  /* --- Radii --- */
+  --radius: 0.75rem;
+
+  /* --- Charts --- */
+  --chart-1: oklch(0.55 0.24 295);
+  --chart-2: oklch(0.62 0.17 150);
+  --chart-3: oklch(0.75 0.16 70);
+  --chart-4: oklch(0.62 0.15 240);
+  --chart-5: oklch(0.58 0.24 25);
+}
+
+.dark {
+  color-scheme: dark;
+
+  --background: oklch(0.16 0.015 285);
+  --foreground: oklch(0.96 0.01 285);
+
+  --card: oklch(0.2 0.018 285);
+  --card-foreground: oklch(0.96 0.01 285);
+
+  --popover: oklch(0.2 0.018 285);
+  --popover-foreground: oklch(0.96 0.01 285);
+
+  --primary: oklch(0.7 0.2 295);
+  --primary-foreground: oklch(0.16 0.03 295);
+
+  --secondary: oklch(0.26 0.02 285);
+  --secondary-foreground: oklch(0.96 0.01 285);
+  --muted: oklch(0.26 0.02 285);
+  --muted-foreground: oklch(0.7 0.02 285);
+
+  --accent: oklch(0.3 0.06 295);
+  --accent-foreground: oklch(0.92 0.06 295);
+  --destructive: oklch(0.65 0.22 25);
+  --destructive-foreground: oklch(0.98 0.01 25);
+  --success: oklch(0.68 0.16 150);
+  --success-foreground: oklch(0.16 0.03 150);
+  --warning: oklch(0.78 0.15 70);
+  --warning-foreground: oklch(0.2 0.05 70);
+  --info: oklch(0.7 0.14 240);
+  --info-foreground: oklch(0.16 0.03 240);
+
+  --border: oklch(1 0 0 / 10%);
+  --input: oklch(1 0 0 / 14%);
+  --ring: oklch(0.7 0.2 295);
+
+  --status-reported: oklch(0.62 0.16 240);
+  --status-reported-foreground: oklch(0.16 0.03 240);
+  --status-verified: oklch(0.72 0.12 200);
+  --status-verified-foreground: oklch(0.16 0.03 200);
+  --status-in_progress: oklch(0.78 0.15 70);
+  --status-in_progress-foreground: oklch(0.2 0.05 70);
+  --status-resolved: oklch(0.68 0.16 150);
+  --status-resolved-foreground: oklch(0.16 0.03 150);
+  --status-rejected: oklch(0.65 0.2 25);
+  --status-rejected-foreground: oklch(0.16 0.03 25);
+
+  --chart-1: oklch(0.7 0.2 295);
+  --chart-2: oklch(0.68 0.16 150);
+  --chart-3: oklch(0.78 0.15 70);
+  --chart-4: oklch(0.7 0.14 240);
+  --chart-5: oklch(0.65 0.2 25);
+}
+
+/* Map semantic tokens to Tailwind utilities */
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-success: var(--success);
+  --color-success-foreground: var(--success-foreground);
+  --color-warning: var(--warning);
+  --color-warning-foreground: var(--warning-foreground);
+  --color-info: var(--info);
+  --color-info-foreground: var(--info-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+
+  --color-status-reported: var(--status-reported);
+  --color-status-reported-foreground: var(--status-reported-foreground);
+  --color-status-verified: var(--status-verified);
+  --color-status-verified-foreground: var(--status-verified-foreground);
+  --color-status-in_progress: var(--status-in_progress);
+  --color-status-in_progress-foreground: var(--status-in_progress-foreground);
+  --color-status-resolved: var(--status-resolved);
+  --color-status-resolved-foreground: var(--status-resolved-foreground);
+  --color-status-rejected: var(--status-rejected);
+  --color-status-rejected-foreground: var(--status-rejected-foreground);
+
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --radius-2xl: calc(var(--radius) + 8px);
+
+  --font-sans: 'Inter', ui-sans-serif, system-ui, 'Segoe UI', Roboto, sans-serif;
+  --font-mono: ui-monospace, 'Cascadia Code', Consolas, monospace;
+
+  /* Custom animation tokens for Framer-style fades used across the app */
+  --animate-accordion-down: accordion-down 0.2s ease-out;
+  --animate-accordion-up: accordion-up 0.2s ease-out;
+}
+
+@keyframes accordion-down {
+  from {
+    height: 0;
+  }
+  to {
+    height: var(--radix-accordion-content-height);
   }
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --text: #9ca3af;
-    --text-h: #f3f4f6;
-    --bg: #16171d;
-    --border: #2e303a;
-    --code-bg: #1f2028;
-    --accent: #c084fc;
-    --accent-bg: rgba(192, 132, 252, 0.15);
-    --accent-border: rgba(192, 132, 252, 0.5);
-    --social-bg: rgba(47, 48, 58, 0.5);
-    --shadow:
-      rgba(0, 0, 0, 0.4) 0 10px 15px -3px, rgba(0, 0, 0, 0.25) 0 4px 6px -2px;
+@keyframes accordion-up {
+  from {
+    height: var(--radix-accordion-content-height);
   }
-
-  #social .button-icon {
-    filter: invert(1) brightness(2);
+  to {
+    height: 0;
   }
 }
 
-#root {
-  width: 1126px;
-  max-width: 100%;
-  margin: 0 auto;
-  text-align: center;
-  border-inline: 1px solid var(--border);
-  min-height: 100svh;
-  display: flex;
-  flex-direction: column;
-  box-sizing: border-box;
-}
+/* ---- Base layer ---- */
+@layer base {
+  * {
+    border-color: var(--border);
+  }
 
-body {
-  margin: 0;
-}
+  html {
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
+  }
 
-h1,
-h2 {
-  font-family: var(--heading);
-  font-weight: 500;
-  color: var(--text-h);
-}
+  body {
+    margin: 0;
+    background-color: var(--background);
+    color: var(--foreground);
+    font-family: var(--font-sans);
+    font-feature-settings: 'cv11', 'ss01';
+    font-variation-settings: normal;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+  }
 
-h1 {
-  font-size: 56px;
-  letter-spacing: -1.68px;
-  margin: 32px 0;
-  @media (max-width: 1024px) {
-    font-size: 36px;
-    margin: 20px 0;
+  /* Visible, consistent focus ring for keyboard users across all interactive els */
+  :where(a, button, input, textarea, select, [tabindex]):focus-visible {
+    outline: 2px solid var(--ring);
+    outline-offset: 2px;
+    border-radius: var(--radius-sm);
+  }
+
+  ::selection {
+    background-color: color-mix(in oklab, var(--primary) 28%, transparent);
+  }
+
+  /* Respect reduced motion */
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
   }
 }
-h2 {
-  font-size: 24px;
-  line-height: 118%;
-  letter-spacing: -0.24px;
-  margin: 0 0 8px;
-  @media (max-width: 1024px) {
-    font-size: 20px;
+
+/* ---- Scrollbars ---- */
+@layer utilities {
+  .scrollbar-thin {
+    scrollbar-width: thin;
+    scrollbar-color: var(--border) transparent;
   }
-}
-p {
-  margin: 0;
-}
+  .scrollbar-thin::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+  .scrollbar-thin::-webkit-scrollbar-thumb {
+    background-color: var(--border);
+    border-radius: 9999px;
+  }
 
-code,
-.counter {
-  font-family: var(--mono);
-  display: inline-flex;
-  border-radius: 4px;
-  color: var(--text-h);
-}
+  /* Subtle glassmorphism used on overlays / bottom sheets */
+  .glass {
+    background-color: color-mix(in oklab, var(--card) 70%, transparent);
+    backdrop-filter: blur(12px) saturate(140%);
+    -webkit-backdrop-filter: blur(12px) saturate(140%);
+  }
 
-code {
-  font-size: 15px;
-  line-height: 135%;
-  padding: 4px 8px;
-  background: var(--code-bg);
+  /* Hide scrollbar but keep scroll (carousels, chip rows) */
+  .no-scrollbar {
+    scrollbar-width: none;
+  }
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* Safe-area aware padding for notched devices (bottom nav, FAB) */
+  .pb-safe {
+    padding-bottom: calc(env(safe-area-inset-bottom) + 0.5rem);
+  }
+  .pt-safe {
+    padding-top: env(safe-area-inset-top);
+  }
 }
