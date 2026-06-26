@@ -13,7 +13,6 @@ import { AppLayout } from '@/components/layout/AppLayout';
 import { BottomSheet } from '@/components/ui/bottom-sheet';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { IconButton } from '@/components/ui/icon-button';
 import { IssueCard } from '@/components/shared/IssueCard';
 import { MOCK_ISSUES, ISSUE_FILTERS } from '@/data/mock-data';
 import { getStatusMeta } from '@/lib/issue-meta';
@@ -38,14 +37,16 @@ function LocateButton() {
   }, [map]);
 
   return (
-    <IconButton
+    <Button
+      type="button"
       aria-label="Go to current location"
       variant="outline"
+      size="icon"
       className="bg-background shadow-md"
       onClick={locate}
     >
       <Crosshair className="size-5" />
-    </IconButton>
+    </Button>
   );
 }
 
@@ -124,29 +125,35 @@ export default function MapPage() {
         </div>
 
         <div className="absolute right-4 top-24 z-[500] flex flex-col gap-2">
-          <IconButton
+          <Button
+            type="button"
             aria-label="Toggle filters"
             variant="outline"
+            size="icon"
             className="bg-background shadow-md"
             onClick={() => setFilterOpen(true)}
           >
             <Filter className="size-5" />
-          </IconButton>
-          <IconButton
+          </Button>
+          <Button
+            type="button"
             aria-label={showHeatmap ? 'Hide heatmap' : 'Show heatmap'}
             variant="outline"
+            size="icon"
             className={`shadow-md ${showHeatmap ? 'bg-primary text-primary-foreground' : 'bg-background'}`}
             onClick={() => setShowHeatmap(!showHeatmap)}
           >
             <Flame className="size-5" />
-          </IconButton>
-          <IconButton
+          </Button>
+          <Button
+            type="button"
             aria-label="Map layers"
             variant="outline"
+            size="icon"
             className="bg-background shadow-md"
           >
             <Layers className="size-5" />
-          </IconButton>
+          </Button>
         </div>
 
         <div className="absolute bottom-24 left-4 right-4 z-[500] flex gap-2 overflow-x-auto no-scrollbar">

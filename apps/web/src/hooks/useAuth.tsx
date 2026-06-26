@@ -3,7 +3,7 @@ import { onAuthStateChanged, User } from 'firebase/auth';
 import { auth } from '../lib/firebase/auth';
 import { db } from '../lib/firebase/firestore';
 import { doc, getDoc } from 'firebase/firestore';
-import { UserRole } from '@blockseblock/shared/types'; // Assuming this will exist
+import type { UserRole } from '@blockseblock/shared';
 
 interface AuthContextType {
   user: User | null;
@@ -22,12 +22,11 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
       setUser(currentUser);
       if (currentUser) {
-        // Fetch role from Firestore
         const userDoc = await getDoc(doc(db, 'users', currentUser.uid));
         if (userDoc.exists()) {
           setRole(userDoc.data().role as UserRole);
         } else {
-          setRole('Citizen'); // Default role
+          setRole('citizen');
         }
       } else {
         setRole(null);

@@ -1,7 +1,6 @@
 import { Navigate, Outlet } from 'react-router-dom';
-import { useAuth } from '../../hooks/useAuth';
-import { UserRole } from '@blockseblock/shared/types';
-import { PageLoader } from './PageLoader';
+import type { UserRole } from '@blockseblock/shared';
+import { ProtectedRouteAuth } from './ProtectedRouteAuth';
 
 interface ProtectedRouteProps {
   allowedRoles?: UserRole[];
@@ -10,27 +9,10 @@ interface ProtectedRouteProps {
 /** UI-only dev mode bypasses Firebase auth so screens can be previewed without backend. */
 const UI_DEV_MODE = import.meta.env.VITE_UI_DEV_MODE !== 'false';
 
-export const ProtectedRoute = ({ allowedRoles }: ProtectedRouteProps) => {
-  const { user, role, loading } = useAuth();
-
+export function ProtectedRoute({ allowedRoles }: ProtectedRouteProps) {
   if (UI_DEV_MODE) {
-    if (allowedRoles && role && !allowedRoles.includes(role)) {
-      return <Navigate to="/unauthorized" replace />;
-    }
     return <Outlet />;
   }
 
-  if (loading) {
-    return <PageLoader />;
-  }
-
-  if (!user) {
-    return <Navigate to="/login" replace />;
-  }
-
-  if (allowedRoles && role && !allowedRoles.includes(role)) {
-    return <Navigate to="/unauthorized" replace />;
-  }
-
-  return <Outlet />;
-};
+  return <ProtectedRouteAuth allowedRoles={allowedRoles} />;
+}
