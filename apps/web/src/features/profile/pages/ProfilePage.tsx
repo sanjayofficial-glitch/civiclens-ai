@@ -6,7 +6,6 @@ import {
   FileText,
   Trophy,
   Star,
-  Shield,
   ChevronRight,
 } from 'lucide-react';
 import { AppLayout, PageHeader } from '@/components/layout/AppLayout';
