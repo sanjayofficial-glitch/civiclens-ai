@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Mail, Lock, Eye, EyeOff } from 'lucide-react';
+import { toast } from 'sonner';
 import { AuthLayout } from '@/components/layout/AppLayout';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -23,7 +24,12 @@ export default function LoginPage() {
       await AuthService.signInWithEmail(email, password);
       navigate('/home');
     } catch (error) {
-      console.error('Email sign-in failed', error);
+      const msg = (error as { code?: string })?.code;
+      if (msg === 'auth/user-not-found') toast.error('No account found with this email.');
+      else if (msg === 'auth/wrong-password') toast.error('Incorrect password. Please try again.');
+      else if (msg === 'auth/invalid-email') toast.error('Please enter a valid email address.');
+      else if (msg === 'auth/too-many-requests') toast.error('Too many attempts. Please try again later.');
+      else toast.error('Sign-in failed. Please try again.');
     } finally {
       setLoading(false);
     }

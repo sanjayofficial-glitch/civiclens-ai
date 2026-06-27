@@ -208,7 +208,7 @@ export default function ReportWizardPage() {
     setSubmitting(true);
     try {
       const geohash = `${draft.latitude.toFixed(5)},${draft.longitude.toFixed(5)}`;
-      await IssueService.create({
+      const docRef = await IssueService.create({
         title: draft.title || 'Untitled Report',
         description: draft.description,
         category: draft.category,
@@ -229,7 +229,7 @@ export default function ReportWizardPage() {
       if (draft.localPhoto) URL.revokeObjectURL(draft.localPhoto);
       localStorage.removeItem(DRAFT_KEY);
       toast.success('Report submitted!');
-      navigate('/home');
+      navigate(`/issues/${docRef.id}`);
     } catch (err) {
       console.error(err);
       toast.error('Failed to submit. Please try again.');

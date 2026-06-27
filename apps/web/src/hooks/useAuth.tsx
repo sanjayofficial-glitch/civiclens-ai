@@ -22,20 +22,30 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
       setUser(currentUser);
       if (currentUser) {
-        const profile = {
-          displayName: currentUser.displayName ?? 'Anonymous Citizen',
-          email: currentUser.email ?? '',
-          photoURL: currentUser.photoURL ?? null,
-          phoneNumber: currentUser.phoneNumber ?? null,
-          role: 'citizen' as UserRole,
-          reputation: 0,
-          badges: [],
-          streakDays: 0,
-          fcmTokens: [],
-        };
-
-        await UserService.ensureProfile(currentUser.uid, profile);
-        setRole('citizen');
+        try {
+          const existingProfile = await UserService.getProfile(currentUser.uid);
+          if (!existingProfile) {
+            const profile = {
+              displayName: currentUser.displayName ?? 'Anonymous Citizen',
+              email: currentUser.email ?? '',
+              photoURL: currentUser.photoURL ?? null,
+              phoneNumber: currentUser.phoneNumber ?? null,
+              role: 'citizen' as UserRole,
+              reputation: 0,
+              issuesReported: 0,
+              issuesVerified: 0,
+              badges: [],
+              streakDays: 0,
+              fcmTokens: [],
+            };
+            await UserService.ensureProfile(currentUser.uid, profile);
+            setRole('citizen');
+          } else {
+            setRole(existingProfile.role || 'citizen');
+          }
+        } catch {
+          setRole('citizen');
+        }
       } else {
         setRole(null);
       }

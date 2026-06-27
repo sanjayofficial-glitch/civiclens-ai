@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { MapPin, Phone, User } from 'lucide-react';
+import { toast } from 'sonner';
 import { AuthLayout } from '@/components/layout/AppLayout';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -15,7 +16,7 @@ export default function ProfileCompletionPage() {
   const navigate = useNavigate();
   const { user } = useAuth();
   const [loading, setLoading] = useState(false);
-  const [displayName, setDisplayName] = useState('Alex Rivera');
+  const [displayName, setDisplayName] = useState(user?.displayName ?? '');
   const [phone, setPhone] = useState('');
   const [location, setLocation] = useState('');
 
@@ -40,6 +41,7 @@ export default function ProfileCompletionPage() {
       navigate('/home');
     } catch (error) {
       console.error('Profile completion failed', error);
+      toast.error('Failed to save profile. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -55,7 +57,7 @@ export default function ProfileCompletionPage() {
         <div className="mb-6 text-center">
           <Avatar className="mx-auto mb-4 size-20">
             <AvatarFallback className="bg-primary/15 text-xl text-primary">
-              AR
+              {(displayName || 'AC').split(' ').map((n) => n[0]).join('').toUpperCase().slice(0, 2)}
             </AvatarFallback>
           </Avatar>
           <H2>Complete Your Profile</H2>

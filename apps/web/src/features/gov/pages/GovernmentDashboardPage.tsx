@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import {
@@ -32,15 +32,7 @@ const pinIcon = L.divIcon({
   iconAnchor: [10, 10],
 });
 
-const CHART_DATA = [
-  { label: 'Mon', value: 12 },
-  { label: 'Tue', value: 19 },
-  { label: 'Wed', value: 15 },
-  { label: 'Thu', value: 22 },
-  { label: 'Fri', value: 18 },
-  { label: 'Sat', value: 8 },
-  { label: 'Sun', value: 5 },
-];
+const DAY_LABELS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'] as const;
 
 export default function GovernmentDashboardPage() {
   const [statusFilter, setStatusFilter] = useState<IssueStatus | 'all'>('all');
@@ -62,9 +54,27 @@ export default function GovernmentDashboardPage() {
 
   const defaultCenter: [number, number] = validIssues.length > 0 
     ? [validIssues[0].location.geopoint.latitude, validIssues[0].location.geopoint.longitude]
-    : [40.7128, -74.006];
+    : [20.5937, 78.9629]; // India center default
 
-  const maxChart = Math.max(...CHART_DATA.map((d) => d.value));
+  // Compute chart data from real issues — reports per day of the current week
+  const chartData = useMemo(() => {
+    const now = new Date();
+    const dayOfWeek = now.getDay();
+    const startOfWeek = new Date(now);
+    startOfWeek.setDate(now.getDate() - dayOfWeek);
+    startOfWeek.setHours(0, 0, 0, 0);
+
+    const counts = new Array(7).fill(0) as number[];
+    for (const issue of issues) {
+      const created = new Date(String(issue.createdAt));
+      if (created >= startOfWeek) {
+        counts[created.getDay()]++;
+      }
+    }
+    return DAY_LABELS.map((label, i) => ({ label, value: counts[i] }));
+  }, [issues]);
+
+  const maxChart = Math.max(...chartData.map((d) => d.value), 1);
 
   return (
     <GovLayout>
@@ -94,20 +104,17 @@ export default function GovernmentDashboardPage() {
       <div className="mb-6 grid grid-cols-2 gap-4 lg:grid-cols-4">
         <StatCard
           label="Active Issues"
-          value={statsLoading ? '-' : stats?.activeIssues ?? 0}
+          value={statsLoading ? '-' : stats?.activeIssues ?? issues.filter((i) => i.status !== 'resolved' && i.status !== 'rejected').length}
           icon={ClipboardList}
-          trend="+12 this week"
         />
         <StatCard
           label="Resolved This Week"
           value={statsLoading ? '-' : stats?.resolvedThisWeek ?? 0}
           icon={BarChart3}
-          trend="+23%"
-          trendUp
         />
         <StatCard
           label="Total Reports"
-          value={statsLoading ? '-' : stats?.totalReports?.toLocaleString() ?? 0}
+          value={statsLoading ? '-' : stats?.totalReports?.toLocaleString() ?? issues.length}
           icon={Filter}
         />
         <StatCard
@@ -137,7 +144,7 @@ export default function GovernmentDashboardPage() {
                   />
                 </div>
                 <div className="flex flex-wrap gap-2">
-                  {(['all', 'reported', 'verified', 'in_progress'] as const).map(
+                  {(['all', 'reported', 'verified', 'in_progress', 'resolved', 'rejected'] as const).map(
                     (s) => (
                       <Button
                         key={s}
@@ -185,7 +192,7 @@ export default function GovernmentDashboardPage() {
                 </CardHeader>
                 <CardContent>
                   <div className="flex h-48 items-end gap-2">
-                    {CHART_DATA.map((d) => (
+                    {chartData.map((d) => (
                       <div
                         key={d.label}
                         className="flex flex-1 flex-col items-center gap-1"

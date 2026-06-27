@@ -196,8 +196,20 @@ export default function IssueDetailsPage() {
       toast.error('Please describe the reason for flagging.');
       return;
     }
-    // In a real app this would write to a reports collection
-    toast.success('Issue has been flagged for review. Thank you!');
+    if (!id || !user) {
+      toast.error('Sign in to flag issues.');
+      return;
+    }
+    try {
+      await IssueService.update(id, {
+        flagged: true,
+        flaggedBy: user.uid,
+        flagReason: flagReason.trim(),
+      } as any);
+      toast.success('Issue has been flagged for review. Thank you!');
+    } catch {
+      toast.error('Failed to flag issue. Please try again.');
+    }
     setShowFlagDialog(false);
     setFlagReason('');
   };

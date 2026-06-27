@@ -121,15 +121,11 @@ export default function HomePage() {
               label="Your Reports"
               value={userLoading ? 0 : myReportCount}
               icon={FileText}
-              trend="+3 this week"
-              trendUp
             />
             <StatCard
               label="Verifications"
               value={userLoading ? 0 : myVerifiedCount}
               icon={CheckCircle}
-              trend="+8 this week"
-              trendUp
             />
           </div>
         </motion.section>
@@ -220,7 +216,7 @@ export default function HomePage() {
               </AvatarFallback>
             </Avatar>
             <div className="flex-1">
-              <p className="text-sm font-medium">You&apos;re ranked #3 this week</p>
+              <p className="text-sm font-medium">Your Community Rank</p>
               <p className="text-xs text-muted-foreground">
                 {userLoading ? '-' : (user?.reputation?.toLocaleString() ?? '0')} points · {userLoading ? '-' : (user?.streakDays ?? '0')}-day streak
               </p>

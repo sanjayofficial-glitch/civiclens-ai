@@ -8,6 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useLeaderboard } from '@/hooks/data/useLeaderboard';
+import { useAuth } from '@/hooks/useAuth';
 import { useUser } from '@/hooks/data/useUser';
 import { BADGES } from '@/lib/constants';
 import type { LeaderboardPeriod } from '@blockseblock/shared';
@@ -29,6 +30,7 @@ function RankIcon({ rank }: { rank: number }) {
 export default function LeaderboardPage() {
   const [period, setPeriod] = useState<LeaderboardPeriod>('weekly');
   const { leaders, loading } = useLeaderboard(period, 50);
+  const { user: authUser } = useAuth();
   const { user } = useUser();
   const entries = leaders;
   
@@ -75,7 +77,7 @@ export default function LeaderboardPage() {
                         const heights = ['h-20', 'h-28', 'h-16'];
                         return (
                           <div
-                            key={entry.uid}
+                            key={entry.uid ?? `empty-${i}`}
                             className={cn(
                               'flex flex-col items-center',
                               i === 1 && '-mt-2',
@@ -107,10 +109,10 @@ export default function LeaderboardPage() {
                     <div className="space-y-2">
                       {entries.map((entry, i) => {
                         const rank = i + 1;
-                        const isMe = user ? entry.uid === user.uid : false;
+                        const isMe = authUser ? entry.uid === authUser.uid : false;
                         return (
                           <Card
-                            key={entry.uid}
+                            key={entry.uid ?? `entry-${i}`}
                             className={cn(isMe && 'border-primary/30 bg-primary/5')}
                           >
                             <CardContent className="flex items-center gap-3 p-3">

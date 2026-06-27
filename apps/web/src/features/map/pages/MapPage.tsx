@@ -21,8 +21,8 @@ import type { IssueStatus } from '@blockseblock/shared';
 import { useIssues } from '@/hooks/data/useIssues';
 import 'leaflet/dist/leaflet.css';
 
-const DEFAULT_CENTER: [number, number] = [40.7128, -74.006];
-const DEFAULT_ZOOM = 14;
+const DEFAULT_CENTER: [number, number] = [20.5937, 78.9629]; // India center
+const DEFAULT_ZOOM = 5;
 
 const TILE_LAYERS = {
   street: {
@@ -139,16 +139,51 @@ export default function MapPage() {
           <LocateButton />
         </MapContainer>
 
-        {/* Heatmap overlay */}
-        {showHeatmap && (
+        {/* Heatmap overlay — data-driven density visualization */}
+        {showHeatmap && validIssues.length > 0 && (
           <div
-            className="pointer-events-none absolute inset-0 z-[400] opacity-40"
+            className="pointer-events-none absolute inset-0 z-[400]"
             aria-hidden="true"
-            style={{
-              background:
-                'radial-gradient(circle at 30% 40%, rgba(170,59,255,0.5) 0%, transparent 40%), radial-gradient(circle at 70% 60%, rgba(255,100,50,0.4) 0%, transparent 35%)',
-            }}
-          />
+          >
+            {(() => {
+              const mapEl = document.querySelector('.leaflet-container');
+              if (!mapEl) return null;
+              const rect = mapEl.getBoundingClientRect();
+              const getSeverityWeight = (s: string) => {
+                if (s === 'critical') return 1.0;
+                if (s === 'high') return 0.75;
+                if (s === 'medium') return 0.5;
+                return 0.3;
+              };
+              return validIssues.map((issue) => {
+                const lat = issue.location.geopoint.latitude;
+                const lng = issue.location.geopoint.longitude;
+                const mapWidth = rect.width;
+                const mapHeight = rect.height;
+                // Convert lat/lng to approximate pixel position relative to current view
+                const x = ((lng - (DEFAULT_CENTER[1] - 10)) / 20) * mapWidth;
+                const y = ((DEFAULT_CENTER[0] + 10 - lat) / 20) * mapHeight;
+                const weight = getSeverityWeight(issue.severity);
+                const radius = 30 + weight * 40;
+                return (
+                  <div
+                    key={issue.id}
+                    className="absolute rounded-full"
+                    style={{
+                      left: `${(x / mapWidth) * 100}%`,
+                      top: `${(y / mapHeight) * 100}%`,
+                      width: radius,
+                      height: radius,
+                      transform: 'translate(-50%, -50%)',
+                      background: issue.severity === 'critical' || issue.severity === 'high'
+                        ? 'radial-gradient(circle, rgba(255,50,50,0.6) 0%, rgba(255,100,50,0.3) 40%, transparent 70%)'
+                        : 'radial-gradient(circle, rgba(170,59,255,0.5) 0%, rgba(170,59,255,0.2) 40%, transparent 70%)',
+                    }}
+                  />
+                );
+              });
+            })()}
+          </div>
         )}
 
         {/* Top info bar */}

@@ -1,3 +1,4 @@
+import { useState, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowLeft, Shield, Bell, Lock } from 'lucide-react';
 import { AppLayout } from '@/components/layout/AppLayout';
@@ -8,7 +9,33 @@ import { Separator } from '@/components/ui/separator';
 import { ThemeToggle } from '@/components/ui/theme-toggle';
 import { H2 } from '@/components/ui/typography';
 
+function usePersistedSwitch(key: string, defaultValue: boolean) {
+  const [value, setValue] = useState(() => {
+    try {
+      const stored = localStorage.getItem(key);
+      return stored !== null ? stored === 'true' : defaultValue;
+    } catch {
+      return defaultValue;
+    }
+  });
+
+  const onChange = useCallback((checked: boolean) => {
+    setValue(checked);
+    try {
+      localStorage.setItem(key, String(checked));
+    } catch { /* ignore */ }
+  }, [key]);
+
+  return { value, onChange };
+}
+
 export default function SettingsPage() {
+  const push = usePersistedSwitch('settings-push', true);
+  const email = usePersistedSwitch('settings-email', false);
+  const leaderboard = usePersistedSwitch('settings-leaderboard', true);
+  const publicProfile = usePersistedSwitch('settings-public-profile', true);
+  const shareLocation = usePersistedSwitch('settings-share-location', true);
+
   return (
     <AppLayout hideNav>
       <header className="flex items-center gap-3 border-b border-border/50 px-4 py-4 pt-safe">
@@ -44,15 +71,15 @@ export default function SettingsPage() {
           <div className="space-y-3 rounded-xl border border-border/50 p-4">
             <div className="flex items-center justify-between">
               <Label htmlFor="push">Push notifications</Label>
-              <Switch id="push" defaultChecked />
+              <Switch id="push" checked={push.value} onCheckedChange={push.onChange} />
             </div>
             <div className="flex items-center justify-between">
               <Label htmlFor="email">Email updates</Label>
-              <Switch id="email" />
+              <Switch id="email" checked={email.value} onCheckedChange={email.onChange} />
             </div>
             <div className="flex items-center justify-between">
               <Label htmlFor="leaderboard">Leaderboard alerts</Label>
-              <Switch id="leaderboard" defaultChecked />
+              <Switch id="leaderboard" checked={leaderboard.value} onCheckedChange={leaderboard.onChange} />
             </div>
           </div>
         </section>
@@ -67,11 +94,11 @@ export default function SettingsPage() {
           <div className="space-y-3 rounded-xl border border-border/50 p-4">
             <div className="flex items-center justify-between">
               <Label htmlFor="profile-public">Public profile</Label>
-              <Switch id="profile-public" defaultChecked />
+              <Switch id="profile-public" checked={publicProfile.value} onCheckedChange={publicProfile.onChange} />
             </div>
             <div className="flex items-center justify-between">
               <Label htmlFor="location">Share location on reports</Label>
-              <Switch id="location" defaultChecked />
+              <Switch id="location" checked={shareLocation.value} onCheckedChange={shareLocation.onChange} />
             </div>
           </div>
         </section>

@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Mail, Lock, User, Eye, EyeOff } from 'lucide-react';
+import { toast } from 'sonner';
 import { AuthLayout } from '@/components/layout/AppLayout';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -26,7 +27,11 @@ export default function SignupPage() {
       await AuthService.sendVerificationEmail();
       navigate('/profile-completion');
     } catch (error) {
-      console.error('Sign-up failed', error);
+      const msg = (error as { code?: string })?.code;
+      if (msg === 'auth/email-already-in-use') toast.error('An account with this email already exists.');
+      else if (msg === 'auth/weak-password') toast.error('Password is too weak. Use at least 8 characters.');
+      else if (msg === 'auth/invalid-email') toast.error('Please enter a valid email address.');
+      else toast.error('Sign-up failed. Please try again.');
     } finally {
       setLoading(false);
     }

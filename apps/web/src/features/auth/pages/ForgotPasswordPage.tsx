@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Mail, ArrowLeft, CheckCircle2 } from 'lucide-react';
+import { toast } from 'sonner';
 import { AuthLayout } from '@/components/layout/AppLayout';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -21,7 +22,10 @@ export default function ForgotPasswordPage() {
       await AuthService.sendResetEmail(email);
       setSent(true);
     } catch (error) {
-      console.error('Password reset failed', error);
+      const msg = (error as { code?: string })?.code;
+      if (msg === 'auth/user-not-found') toast.error('No account found with this email.');
+      else if (msg === 'auth/invalid-email') toast.error('Please enter a valid email address.');
+      else toast.error('Failed to send reset email. Please try again.');
     } finally {
       setLoading(false);
     }
