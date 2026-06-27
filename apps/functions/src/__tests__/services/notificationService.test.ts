@@ -1,18 +1,20 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
-const mockCreate = vi.fn();
-const mockDocUpdate = vi.fn();
-const mockDoc = vi.fn(() => ({ update: mockDocUpdate }));
-const mockNotificationRepo = vi.fn(() => ({
-  create: mockCreate,
-  doc: mockDoc,
-}));
+const { mockCreate, mockDocUpdate, mockDoc, mockNotificationRepoImpl, mockServerTimestamp } = vi.hoisted(() => {
+  const mockCreate = vi.fn();
+  const mockDocUpdate = vi.fn();
+  const mockDoc = vi.fn(() => ({ update: mockDocUpdate }));
+  const mockNotificationRepoImpl = vi.fn(() => ({
+    create: mockCreate,
+    doc: mockDoc,
+  }));
+  const mockServerTimestamp = vi.fn(() => ({ _method: 'serverTimestamp' }));
+  return { mockCreate, mockDocUpdate, mockDoc, mockNotificationRepoImpl, mockServerTimestamp };
+});
 
 vi.mock('../../repositories/notificationRepository', () => ({
-  NotificationRepository: mockNotificationRepo,
+  NotificationRepository: mockNotificationRepoImpl,
 }));
-
-const mockServerTimestamp = vi.fn(() => ({ _method: 'serverTimestamp' }));
 
 vi.mock('../../lib/firebase', () => ({
   FieldValue: { serverTimestamp: mockServerTimestamp },
@@ -22,7 +24,6 @@ import { createNotification, markNotificationRead } from '../../services/notific
 
 beforeEach(() => {
   vi.clearAllMocks();
-  mockNotificationRepo.mockClear();
 });
 
 describe('createNotification', () => {

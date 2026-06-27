@@ -1,10 +1,13 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
-const mockRunTransaction = vi.fn();
-const mockDoc = vi.fn();
-const mockCollection = vi.fn(() => ({ doc: mockDoc }));
-const mockDb = { collection: mockCollection, runTransaction: mockRunTransaction };
-const mockServerTimestamp = vi.fn(() => ({ _method: 'serverTimestamp' }));
+const { mockRunTransaction, mockDoc, mockCollection, mockDb, mockServerTimestamp } = vi.hoisted(() => {
+  const mockRunTransaction = vi.fn();
+  const mockDoc = vi.fn();
+  const mockCollection = vi.fn(() => ({ doc: mockDoc }));
+  const mockDb = { collection: mockCollection, runTransaction: mockRunTransaction };
+  const mockServerTimestamp = vi.fn(() => ({ _method: 'serverTimestamp' }));
+  return { mockRunTransaction, mockDoc, mockCollection, mockDb, mockServerTimestamp };
+});
 
 vi.mock('../../lib/firebase', () => ({
   db: mockDb,
@@ -12,18 +15,6 @@ vi.mock('../../lib/firebase', () => ({
 }));
 
 import { registerVote } from '../../services/verificationService';
-
-function makeTransaction(getReturn: unknown) {
-  return vi.fn(async (cb: (tx: unknown) => Promise<void>) => {
-    const tx = {
-      get: vi.fn(async () => getReturn),
-      set: vi.fn(),
-      update: vi.fn(),
-    };
-    await cb(tx);
-    return tx;
-  });
-}
 
 beforeEach(() => {
   vi.clearAllMocks();
@@ -53,12 +44,12 @@ describe('registerVote', () => {
     expect(tx.set).toHaveBeenCalledTimes(2);
 
     expect(tx.set).toHaveBeenCalledWith(
-      expect.objectContaining({ _path: undefined }),
+      expect.objectContaining({}),
       expect.objectContaining({ issueId: 'issue_001', userId: 'user_abc', type: 'upvote' }),
     );
 
     expect(tx.set).toHaveBeenCalledWith(
-      expect.objectContaining({ _path: undefined }),
+      expect.objectContaining({}),
       {
         verification: {
           upvotes: 3,

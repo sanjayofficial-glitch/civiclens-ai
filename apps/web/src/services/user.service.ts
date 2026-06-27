@@ -7,7 +7,13 @@ const USERS_COLLECTION = 'users';
 
 export const UserService = {
   createProfile: async (uid: string, data: Partial<User>) => {
-    return setDoc(doc(db, USERS_COLLECTION, uid), data, { merge: true });
+    const cleanData = { ...data };
+    Object.keys(cleanData).forEach(key => {
+      if (cleanData[key as keyof typeof cleanData] === undefined) {
+        delete cleanData[key as keyof typeof cleanData];
+      }
+    });
+    return setDoc(doc(db, USERS_COLLECTION, uid), cleanData, { merge: true });
   },
 
   getProfile: async (uid: string) => {
@@ -16,7 +22,13 @@ export const UserService = {
   },
 
   updateProfile: async (uid: string, data: Partial<User>) => {
-    return updateDoc(doc(db, USERS_COLLECTION, uid), data);
+    const cleanData = { ...data };
+    Object.keys(cleanData).forEach(key => {
+      if (cleanData[key as keyof typeof cleanData] === undefined) {
+        delete cleanData[key as keyof typeof cleanData];
+      }
+    });
+    return updateDoc(doc(db, USERS_COLLECTION, uid), cleanData);
   },
 
   ensureProfile: async (
@@ -27,32 +39,36 @@ export const UserService = {
     const snap = await getDoc(ref);
 
     if (!snap.exists()) {
-      return setDoc(
-        ref,
-        {
-          uid,
-          displayName: data.displayName ?? 'Anonymous Citizen',
-          email: data.email ?? '',
-          photoURL: data.photoURL ?? null,
-          phoneNumber: data.phoneNumber ?? null,
-          role: data.role ?? 'citizen',
-          reputation: data.reputation ?? 0,
-          badges: data.badges ?? [],
-          streakDays: data.streakDays ?? 0,
-          lastActive: serverTimestamp(),
-          location: data.location,
-          locationLabel: data.locationLabel,
-          fcmTokens: data.fcmTokens ?? [],
-          createdAt: serverTimestamp(),
-          updatedAt: serverTimestamp(),
-        },
-        { merge: true },
-      );
+      const payload: any = {
+        uid,
+        displayName: data.displayName ?? 'Anonymous Citizen',
+        email: data.email ?? '',
+        photoURL: data.photoURL ?? null,
+        phoneNumber: data.phoneNumber ?? null,
+        role: data.role ?? 'citizen',
+        reputation: data.reputation ?? 0,
+        badges: data.badges ?? [],
+        streakDays: data.streakDays ?? 0,
+        lastActive: serverTimestamp(),
+        fcmTokens: data.fcmTokens ?? [],
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
+      };
+      if (data.location !== undefined) payload.location = data.location;
+      if (data.locationLabel !== undefined) payload.locationLabel = data.locationLabel;
+      return setDoc(ref, payload, { merge: true });
     }
 
-    return updateDoc(ref, {
+    const updatePayload: any = {
       ...data,
       updatedAt: serverTimestamp(),
+    };
+    Object.keys(updatePayload).forEach(key => {
+      if (updatePayload[key] === undefined) {
+        delete updatePayload[key];
+      }
     });
+
+    return updateDoc(ref, updatePayload);
   },
 };

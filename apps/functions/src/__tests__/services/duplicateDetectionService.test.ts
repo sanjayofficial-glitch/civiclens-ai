@@ -1,9 +1,12 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
-const mockGet = vi.fn();
-const mockLimit = vi.fn(() => ({ get: mockGet }));
-const mockWhere = vi.fn(() => ({ limit: mockLimit }));
-const mockCollection = vi.fn(() => ({ where: mockWhere }));
+const { mockGet, mockLimit, mockWhere, mockCollection } = vi.hoisted(() => {
+  const mockGet = vi.fn();
+  const mockLimit = vi.fn(() => ({ get: mockGet }));
+  const mockWhere = vi.fn(() => ({ limit: mockLimit }));
+  const mockCollection = vi.fn(() => ({ where: mockWhere }));
+  return { mockGet, mockLimit, mockWhere, mockCollection };
+});
 
 vi.mock('../../lib/firebase', () => ({
   db: { collection: mockCollection },

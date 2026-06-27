@@ -7,12 +7,12 @@ vi.mock('../../config', () => ({
   DEFAULT_REPUTATION: { ISSUE_REPORTED: 5, ISSUE_VERIFIED: 8, COMMENT_CREATED: 1, UPVOTE_CAST: 2, DOWNVOTE_CAST: -1, ISSUE_RESOLVED: 15 },
 }));
 
-const mockFail = vi.fn();
+const { mockFail } = vi.hoisted(() => ({ mockFail: vi.fn() }));
 vi.mock('../../lib/errors', () => ({
   fail: mockFail,
 }));
 
-const mockFetchFileBuffer = vi.fn();
+const { mockFetchFileBuffer } = vi.hoisted(() => ({ mockFetchFileBuffer: vi.fn() }));
 vi.mock('../../services/storageService', () => ({
   fetchFileBuffer: mockFetchFileBuffer,
 }));
