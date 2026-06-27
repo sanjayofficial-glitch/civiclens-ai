@@ -87,8 +87,8 @@ function loadDraft(): ReportDraft {
       ...defaultDraft,
       ...parsed,
       localPhoto: null,
-      // Keep only Firebase https:// URLs; discard any stale blob: URLs
-      photos: (parsed.photos ?? []).filter((p: string) => p.startsWith('https://')),
+      // Keep only Firebase URLs; discard any stale blob: URLs
+      photos: (parsed.photos ?? []).filter((p: string) => !p.startsWith('blob:')),
     };
   } catch {
     return defaultDraft;
@@ -162,7 +162,7 @@ export default function ReportWizardPage() {
       // Upload ALL photos to Firebase Storage in parallel first
       // (we need the URL to try the server-side callable)
       const uploadPromises = blobs.map((blob, idx) => {
-        const uploadPath = `issues/${Date.now()}_${idx}_${Math.random().toString(36).slice(2)}`;
+        const uploadPath = `users/${user?.uid || 'anonymous'}/issue/${Date.now()}_${idx}_photo${idx}.jpg`;
         return UploadService.uploadFile(
           new File([blob], `photo_${idx}.jpg`, { type: blob.type || 'image/jpeg' }),
           uploadPath,
@@ -212,7 +212,7 @@ export default function ReportWizardPage() {
     } finally {
       setAiLoading(false);
     }
-  }, [draft.title, draft.description]);
+  }, [draft.title, draft.description, user]);
 
   const next = async () => {
     // Step 2 → 3: move to AI step immediately, run upload + AI in background
@@ -241,7 +241,7 @@ export default function ReportWizardPage() {
     try {
       const geohash = `${draft.latitude.toFixed(5)},${draft.longitude.toFixed(5)}`;
       // Filter out any blob: URLs that failed to upload — only persist valid Firebase URLs
-      const validImages = draft.photos.filter((url) => url.startsWith('https://'));
+      const validImages = draft.photos.filter((url) => !url.startsWith('blob:'));
       const issueData: Record<string, unknown> = {
         title: draft.title || 'Untitled Report',
         description: draft.description || 'No description provided',
