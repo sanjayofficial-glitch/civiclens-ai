@@ -46,11 +46,14 @@ export default function HomePage() {
     .sort((a, b) => b.verification.upvotes - a.verification.upvotes)
     .slice(0, 3);
 
-  const recentActivity = [
-    { icon: CheckCircle, text: 'Your report was verified', time: '2h ago', color: 'text-success' },
-    { icon: Activity, text: 'Water leak status updated', time: '5h ago', color: 'text-info' },
-    { icon: Trophy, text: 'Moved to #3 on leaderboard', time: '1d ago', color: 'text-warning' },
-  ];
+  const recentActivityIcons = [CheckCircle, Activity, Trophy] as const;
+  const recentActivityColors = ['text-success', 'text-info', 'text-warning'] as const;
+  const recentActivity = issues.slice(0, 3).map((issue, i) => ({
+    icon: recentActivityIcons[i] ?? CheckCircle,
+    text: issue.title,
+    time: formatRelativeTime(String(issue.createdAt)),
+    color: recentActivityColors[i] ?? 'text-muted-foreground',
+  }));
 
   const displayName = user?.displayName ?? 'Citizen';
   const firstName = displayName.split(' ')[0];

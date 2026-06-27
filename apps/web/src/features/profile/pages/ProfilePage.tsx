@@ -23,7 +23,7 @@ import { useIssues } from '@/hooks/data/useIssues';
 
 export default function ProfilePage() {
   const { user, loading: userLoading } = useUser();
-  const { issues, loading: issuesLoading } = useIssues(
+  const { issues, loading: issuesLoading, error: issuesError } = useIssues(
     user ? { reporterId: user.uid } : undefined,
     10
   );
@@ -134,6 +134,13 @@ export default function ProfilePage() {
                 <IssueCard key={issue.id} issue={issue} variant="horizontal" />
               ))}
             </div>
+          ) : issuesError ? (
+            <Card className="border-destructive/30">
+              <CardContent className="py-6 text-center">
+                <p className="text-sm font-medium text-destructive">Failed to load reports</p>
+                <p className="mt-1 text-xs text-muted-foreground">Please try again later.</p>
+              </CardContent>
+            </Card>
           ) : (
             <Card>
               <CardContent className="py-8 text-center text-sm text-muted-foreground">

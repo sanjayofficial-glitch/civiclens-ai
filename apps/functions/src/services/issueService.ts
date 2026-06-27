@@ -5,6 +5,19 @@ import { detectDuplicateIssue } from './duplicateDetectionService';
 import { createNotification } from './notificationService';
 import { adjustReputation } from './reputationService';
 import { DEFAULT_REPUTATION } from '../config';
+import type { IssueAnalysisResult } from '../types';
+
+function mapAnalysisToAiSuggestion(analysis: IssueAnalysisResult) {
+  return {
+    category: analysis.category,
+    severity: analysis.severity,
+    confidence: analysis.confidence,
+    suggestedTitle: analysis.title,
+    suggestedDescription: analysis.description,
+    suggestedTags: analysis.suggestedTags,
+    duplicateProbability: analysis.duplicateScore,
+  };
+}
 
 export async function enrichIssueOnCreate(issueId: string) {
   const snap = await db.collection('issues').doc(issueId).get();
@@ -39,7 +52,7 @@ export async function enrichIssueOnCreate(issueId: string) {
 
   await snap.ref.set(
     {
-      aiAnalysis: analysis,
+      aiAnalysis: mapAnalysisToAiSuggestion(analysis),
       duplicateOf: duplicate?.issueId ?? null,
       duplicateScore: duplicate?.score ?? analysis.duplicateScore,
       updatedAt: FieldValue.serverTimestamp(),
@@ -80,4 +93,3 @@ export async function updateIssueVerification(issueId: string, verifiedBy: strin
     { merge: true },
   );
 }
-

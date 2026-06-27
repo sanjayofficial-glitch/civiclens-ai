@@ -20,6 +20,22 @@
       "collectionGroup": "issues",
       "queryScope": "COLLECTION",
       "fields": [
+        { "fieldPath": "reporterId", "order": "ASCENDING" },
+        { "fieldPath": "createdAt", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "issues",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "severity", "order": "ASCENDING" },
+        { "fieldPath": "createdAt", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "issues",
+      "queryScope": "COLLECTION",
+      "fields": [
         { "fieldPath": "location.geohash", "order": "ASCENDING" },
         { "fieldPath": "status", "order": "ASCENDING" }
       ]

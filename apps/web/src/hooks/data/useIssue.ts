@@ -5,8 +5,7 @@ import type { Issue } from '@blockseblock/shared';
 export const useIssue = (id?: string) => {
   const [issue, setIssue] = useState<Issue | null>(null);
   const [loading, setLoading] = useState(true);
-  const [error] = useState<Error | null>(null);
-  
+  const [error, setError] = useState<Error | null>(null);
 
   useEffect(() => {
     if (!id) {
@@ -15,10 +14,19 @@ export const useIssue = (id?: string) => {
     }
 
     setLoading(true);
-    const unsub = IssueService.listenToIssue(id, (fetchedIssue) => {
-      setIssue(fetchedIssue);
-      setLoading(false);
-    });
+    setError(null);
+    const unsub = IssueService.listenToIssue(
+      id,
+      (fetchedIssue) => {
+        setIssue(fetchedIssue);
+        setLoading(false);
+      },
+      (err) => {
+        console.error('useIssue: listener error', err);
+        setError(err);
+        setLoading(false);
+      },
+    );
 
     return () => unsub();
   }, [id]);

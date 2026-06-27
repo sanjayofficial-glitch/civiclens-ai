@@ -58,13 +58,29 @@ export const IssueService = {
     };
   },
 
-  listenToIssue: (id: string, callback: (issue: Issue | null) => void) => {
-    return onSnapshot(doc(db, ISSUES_COLLECTION, id).withConverter(issueConverter), (snap) => {
-      callback(snap.exists() ? snap.data() : null);
-    });
+  listenToIssue: (
+    id: string,
+    callback: (issue: Issue | null) => void,
+    onError?: (error: Error) => void,
+  ) => {
+    return onSnapshot(
+      doc(db, ISSUES_COLLECTION, id).withConverter(issueConverter),
+      (snap) => {
+        callback(snap.exists() ? snap.data() : null);
+      },
+      (err) => {
+        console.error('listenToIssue error:', err);
+        onError?.(err);
+      },
+    );
   },
 
-  listenToIssues: (filters: IssueFilters = {}, pageSize = 10, callback: (issues: Issue[]) => void) => {
+  listenToIssues: (
+    filters: IssueFilters = {},
+    pageSize = 10,
+    callback: (issues: Issue[]) => void,
+    onError?: (error: Error) => void,
+  ) => {
     const constraints: QueryConstraint[] = [];
     
     if (filters.status) constraints.push(where('status', '==', filters.status));
@@ -77,8 +93,15 @@ export const IssueService = {
 
     const q = query(collection(db, ISSUES_COLLECTION).withConverter(issueConverter), ...constraints);
     
-    return onSnapshot(q, (snap) => {
-      callback(snap.docs.map(doc => doc.data()));
-    });
+    return onSnapshot(
+      q,
+      (snap) => {
+        callback(snap.docs.map(doc => doc.data()));
+      },
+      (err) => {
+        console.error('listenToIssues error:', err);
+        onError?.(err);
+      },
+    );
   }
 };

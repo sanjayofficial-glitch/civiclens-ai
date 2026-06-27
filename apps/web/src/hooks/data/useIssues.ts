@@ -6,15 +6,24 @@ import { DocumentSnapshot } from 'firebase/firestore';
 export const useIssues = (filters?: IssueFilters, pageSize = 10) => {
   const [issues, setIssues] = useState<Issue[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error] = useState<Error | null>(null);
-  
+  const [error, setError] = useState<Error | null>(null);
 
   useEffect(() => {
     setLoading(true);
-    const unsub = IssueService.listenToIssues(filters, pageSize, (fetchedIssues) => {
-      setIssues(fetchedIssues);
-      setLoading(false);
-    });
+    setError(null);
+    const unsub = IssueService.listenToIssues(
+      filters,
+      pageSize,
+      (fetchedIssues) => {
+        setIssues(fetchedIssues);
+        setLoading(false);
+      },
+      (err) => {
+        console.error('useIssues: listener error', err);
+        setError(err);
+        setLoading(false);
+      },
+    );
 
     return () => unsub();
   }, [JSON.stringify(filters), pageSize]);
