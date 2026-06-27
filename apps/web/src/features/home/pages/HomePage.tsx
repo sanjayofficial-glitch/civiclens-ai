@@ -1,4 +1,5 @@
 import { Link, useNavigate } from 'react-router-dom';
+import { useMemo } from 'react';
 import { motion } from 'framer-motion';
 import {
   Map,
@@ -21,6 +22,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { useUser } from '@/hooks/data/useUser';
 import { useIssues } from '@/hooks/data/useIssues';
 import { useCommunityStats } from '@/hooks/data/useAnalytics';
+import { useAuth } from '@/hooks/useAuth';
 import { formatRelativeTime } from '@/lib/constants';
 
 const container = {
@@ -38,25 +40,50 @@ export default function HomePage() {
   const greeting =
     hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening';
 
+  const { user: authUser } = useAuth();
   const { user, loading: userLoading } = useUser();
   const { issues, loading: issuesLoading } = useIssues({}, 10);
   const { stats, loading: statsLoading } = useCommunityStats();
 
-  const nearby = issues.slice(0, 3);
-  const trending = [...issues]
-    .sort((a, b) => b.verification.upvotes - a.verification.upvotes)
-    .slice(0, 3);
+  // User-specific stats — use live query so they update immediately
+  const myIssueFilters = useMemo(
+    () => (user?.uid ? { reporterId: user.uid } : undefined),
+    [user?.uid],
+  );
+  const { issues: myIssues } = useIssues(myIssueFilters, 50);
+
+  const myReportCount = myIssueFilters
+    ? myIssues.length || (user?.issuesReported ?? 0)
+    : (user?.issuesReported ?? 0);
+  const myVerifiedCount = myIssueFilters
+    ? myIssues.filter(
+        (i) => i.status === 'verified' || i.status === 'resolved' || i.status === 'in_progress',
+      ).length || (user?.issuesVerified ?? 0)
+    : (user?.issuesVerified ?? 0);
+
+  const nearby = useMemo(() => issues.slice(0, 3), [issues]);
+  const trending = useMemo(
+    () =>
+      [...issues]
+        .sort((a, b) => (b.verification?.upvotes ?? 0) - (a.verification?.upvotes ?? 0))
+        .slice(0, 3),
+    [issues],
+  );
 
   const recentActivityIcons = [CheckCircle, Activity, Trophy] as const;
   const recentActivityColors = ['text-success', 'text-info', 'text-warning'] as const;
-  const recentActivity = issues.slice(0, 3).map((issue, i) => ({
-    icon: recentActivityIcons[i] ?? CheckCircle,
-    text: issue.title,
-    time: formatRelativeTime(issue.createdAt),
-    color: recentActivityColors[i] ?? 'text-muted-foreground',
-  }));
+  const recentActivity = useMemo(
+    () =>
+      issues.slice(0, 3).map((issue, i) => ({
+        icon: recentActivityIcons[i] ?? CheckCircle,
+        text: issue.title,
+        time: formatRelativeTime(issue.createdAt),
+        color: recentActivityColors[i] ?? 'text-muted-foreground',
+      })),
+    [issues],
+  );
 
-  const displayName = user?.displayName ?? 'Citizen';
+  const displayName = user?.displayName ?? authUser?.displayName ?? 'Citizen';
   const firstName = displayName.split(' ')[0];
 
   return (
@@ -91,14 +118,14 @@ export default function HomePage() {
           <div className="grid grid-cols-2 gap-3">
             <StatCard
               label="Your Reports"
-              value={userLoading ? 0 : (user?.issuesReported ?? 0)}
+              value={userLoading ? 0 : myReportCount}
               icon={FileText}
               trend="+3 this week"
               trendUp
             />
             <StatCard
               label="Verifications"
-              value={userLoading ? 0 : (user?.issuesVerified ?? 0)}
+              value={userLoading ? 0 : myVerifiedCount}
               icon={CheckCircle}
               trend="+8 this week"
               trendUp
@@ -194,7 +221,7 @@ export default function HomePage() {
             <div className="flex-1">
               <p className="text-sm font-medium">You&apos;re ranked #3 this week</p>
               <p className="text-xs text-muted-foreground">
-                {userLoading ? '-' : (user?.reputation.toLocaleString() ?? '0')} points · {userLoading ? '-' : (user?.streakDays ?? '0')}-day streak
+                {userLoading ? '-' : (user?.reputation?.toLocaleString() ?? '0')} points · {userLoading ? '-' : (user?.streakDays ?? '0')}-day streak
               </p>
             </div>
             <Badge variant="secondary">View</Badge>
