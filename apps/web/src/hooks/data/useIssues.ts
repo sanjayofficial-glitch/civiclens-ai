@@ -6,6 +6,7 @@ import { DocumentSnapshot } from 'firebase/firestore';
 export const useIssues = (filters?: IssueFilters, pageSize = 10) => {
   const [issues, setIssues] = useState<Issue[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error] = useState<Error | null>(null);
   
 
   useEffect(() => {

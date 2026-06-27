@@ -1,18 +1,18 @@
 import { Toaster as Sonner } from 'sonner';
 
 /**
- * Toast provider — pre-styled to match the BlockSeBlock design system.
- * Call `toast.success()`, `toast.error()` etc. from anywhere.
+ * A toast component to be placed at the root of the app.
+ * Call \	oast.success()\, \	oast.error()\ etc. from anywhere.
  */
 export function Toaster() {
   return (
     <Sonner
-      theme="var(--theme)"
+      theme={'system'}
       className="toaster group"
       toastOptions={{
         classNames: {
           toast:
-            'group toast group-[.toaster]:bg-background group-[.toaster]:text-foreground group-[.toaster]:border-border group-[.toaster]:shadow-xl',
+            'group toast group-[.toaster]:bg-background group-[.toaster]:text-foreground group-[.toaster]:border-border group-[.toaster]:shadow-lg',
           description: 'group-[.toast]:text-muted-foreground',
           actionButton:
             'group-[.toast]:bg-primary group-[.toast]:text-primary-foreground',

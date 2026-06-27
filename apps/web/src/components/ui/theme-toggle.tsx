@@ -1,15 +1,16 @@
 import { Moon, Sun } from 'lucide-react';
-import { useTheme } from 'next-themes';
-import { IconButton } from './icon-button';
+import { useTheme } from '@/components/theme-provider';
+import { Button } from './button';
 
 export function ThemeToggle() {
-  const { theme, setTheme, resolvedTheme } = useTheme();
-  const isDark = (theme === 'system' ? resolvedTheme : theme) === 'dark';
+  const { theme, setTheme } = useTheme();
+  const isDark = theme === 'dark';
 
   return (
-    <IconButton
+    <Button
       aria-label={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
       variant="ghost"
+      size="icon"
       onClick={() => setTheme(isDark ? 'light' : 'dark')}
     >
       {isDark ? (
@@ -17,6 +18,6 @@ export function ThemeToggle() {
       ) : (
         <Moon className="size-5" aria-hidden="true" />
       )}
-    </IconButton>
+    </Button>
   );
 }

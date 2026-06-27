@@ -94,7 +94,7 @@ export { Tabs, TabsList, TabsTrigger, TabsContent } from './tabs';
 
 // --- Data display ---
 export { Avatar, AvatarImage, AvatarFallback } from './avatar';
-export { Progress, type ProgressProps } from './progress';
+export { Progress } from './progress';
 export {
   Tooltip,
   TooltipTrigger,

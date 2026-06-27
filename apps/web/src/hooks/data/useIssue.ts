@@ -5,6 +5,7 @@ import type { Issue } from '@blockseblock/shared';
 export const useIssue = (id?: string) => {
   const [issue, setIssue] = useState<Issue | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error] = useState<Error | null>(null);
   
 
   useEffect(() => {
