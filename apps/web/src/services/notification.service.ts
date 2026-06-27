@@ -1,6 +1,6 @@
 import { collection, doc, query, where, orderBy, onSnapshot, updateDoc, getDocs } from 'firebase/firestore';
 import { db } from '../lib/firebase/firestore.service';
-import { Notification } from '@blockseblock/shared';
+import type { Notification } from '@blockseblock/shared';
 import { notificationConverter } from './converters';
 
 const NOTIFICATIONS_COLLECTION = 'notifications';

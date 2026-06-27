@@ -1,6 +1,6 @@
 import { collection, query, orderBy, limit, getDocs, onSnapshot } from 'firebase/firestore';
 import { db } from '../lib/firebase/firestore.service';
-import { LeaderboardEntry } from '@blockseblock/shared';
+import type { LeaderboardEntry } from '@blockseblock/shared';
 import { leaderboardConverter, userConverter } from './converters';
 
 const USERS_COLLECTION = 'users';

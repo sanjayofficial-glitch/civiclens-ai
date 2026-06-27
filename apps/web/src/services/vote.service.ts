@@ -1,6 +1,6 @@
-import { collection, doc, query, where, onSnapshot, getDocs, setDoc, deleteDoc, getDoc } from 'firebase/firestore';
+import { collection, doc, query, where, onSnapshot, getDocs, setDoc, getDoc } from 'firebase/firestore';
 import { db, runTransaction } from '../lib/firebase/firestore.service';
-import { Vote, VoteType } from '@blockseblock/shared';
+import type { Vote, VoteType } from '@blockseblock/shared';
 import { voteConverter } from './converters';
 
 const VOTES_COLLECTION = 'votes';

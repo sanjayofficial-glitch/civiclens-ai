@@ -134,12 +134,15 @@ export default function ReportWizardPage() {
         severity: draft.severity,
         status: 'reported',
         location: {
+          geohash: 'dr5reg', // Mock geohash
           geopoint: new GeoPoint(40.7128, -74.006), // Use mock point for now, normally use device location
           address: draft.address || 'Unknown address',
         },
         reporterId: user.uid,
+        tags: [],
         media: {
           images: draft.photos,
+          videos: [],
         },
         verification: {
           upvotes: 0,

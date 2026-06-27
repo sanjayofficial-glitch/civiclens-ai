@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../useAuth';
-import { UserService } from '../../services/user.service';
 import type { User as DomainUser } from '@blockseblock/shared';
 import { onSnapshot, doc } from 'firebase/firestore';
 import { db } from '../../lib/firebase/firestore.service';

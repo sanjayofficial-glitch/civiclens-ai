@@ -30,4 +30,4 @@ export const userConverter = createConverter<User>();
 export const commentConverter = createConverter<Comment & { id: string }>();
 export const voteConverter = createConverter<Vote & { id: string }>();
 export const notificationConverter = createConverter<Notification & { id: string }>();
-export const leaderboardConverter = createConverter<LeaderboardEntry & { id: string }>();
+export export const leaderboardConverter = createConverter<LeaderboardEntry & { id: string }>();

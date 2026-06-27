@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { AnalyticsService, GlobalStats } from '../../services/analytics.service';
+import { AnalyticsService, type GlobalStats } from '../../services/analytics.service';
 
 export const useCommunityStats = () => {
   const [stats, setStats] = useState<GlobalStats | null>(null);
