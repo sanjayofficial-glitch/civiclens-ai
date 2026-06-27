@@ -226,9 +226,9 @@ export default function ReportWizardPage() {
       const geohash = `${draft.latitude.toFixed(5)},${draft.longitude.toFixed(5)}`;
       // Filter out any blob: URLs that failed to upload — only persist valid Firebase URLs
       const validImages = draft.photos.filter((url) => url.startsWith('https://'));
-      const docRef = await IssueService.create({
+      const issueData: Record<string, unknown> = {
         title: draft.title || 'Untitled Report',
-        description: draft.description,
+        description: draft.description || 'No description provided',
         category: draft.category,
         severity: draft.severity,
         status: 'reported',
@@ -240,9 +240,13 @@ export default function ReportWizardPage() {
         reporterId: user.uid,
         tags: draft.aiSuggestion?.suggestedTags ?? [],
         media: { images: validImages, videos: [] },
-        aiAnalysis: draft.aiSuggestion,
         verification: { upvotes: 0, downvotes: 0, verifiedBy: [] },
-      });
+      };
+      // Only include aiAnalysis if it exists — Firestore rejects undefined values
+      if (draft.aiSuggestion) {
+        issueData.aiAnalysis = draft.aiSuggestion;
+      }
+      const docRef = await IssueService.create(issueData as any);
       // Release blob URL memory
       if (draft.localPhoto) URL.revokeObjectURL(draft.localPhoto);
       localStorage.removeItem(DRAFT_KEY);
