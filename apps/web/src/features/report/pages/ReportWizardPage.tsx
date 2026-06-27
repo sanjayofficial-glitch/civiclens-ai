@@ -109,71 +109,69 @@ export default function ReportWizardPage() {
   }, []);
 
   const next = async () => {
-    if (step === 2 && !draft.aiSuggestion) {
-      setAiLoading(true);
-      try {
-        if (draft.photos.length > 0 && user) {
+    // Step 2 = Location: advance to step 3 (AI Review) and kick off AI + upload in background
+    if (step === 2) {
+      // Move to the AI review step immediately so the loading UI shows
+      update({ step: 3 });
+
+      if (draft.photos.length > 0 && user && !draft.aiSuggestion) {
+        setAiLoading(true);
+        try {
           // Assume the first photo is a local object URL
           const res = await fetch(draft.photos[0]);
           const blob = await res.blob();
-          
+
           // Convert Blob to Base64 for Gemini
-          const reader = new FileReader();
-          reader.readAsDataURL(blob);
-          const base64Promise = new Promise<string>((resolve) => {
+          const base64Image = await new Promise<string>((resolve, reject) => {
+            const reader = new FileReader();
             reader.onloadend = () => {
-              const base64data = (reader.result as string).split(',')[1];
-              resolve(base64data);
+              const result = (reader.result as string).split(',')[1];
+              resolve(result);
             };
+            reader.onerror = reject;
+            reader.readAsDataURL(blob);
           });
-          const base64Image = await base64Promise;
-          
-          // Start both AI analysis and Firebase upload concurrently
-          // Use storage path that matches Firestore rules: users/{userId}/uploads/{fileId}
+
+          // Run AI analysis and Firebase upload concurrently
           const path = `users/${user.uid}/uploads/${Date.now()}_${Math.random().toString(36).substring(7)}`;
-          const uploadPromise = UploadService.uploadFile(new File([blob], 'photo.jpg', { type: blob.type }), path);
-          const aiPromise = AiService.analyzeIssueImage(base64Image, blob.type).catch(() => null);
-          
-          // Use allSettled so upload failure doesn't discard AI result (or vice versa)
-          const [uploadResult, analysis] = await Promise.all([
-            uploadPromise.catch(() => null as string | null),
-            aiPromise,
+          const [uploadResult, aiData] = await Promise.all([
+            UploadService.uploadFile(new File([blob], 'photo.jpg', { type: blob.type }), path).catch(
+              () => null as string | null,
+            ),
+            AiService.analyzeIssueImage(base64Image, blob.type).catch(() => null),
           ]);
-          
-          const downloadUrl = uploadResult;
-          const aiData = analysis;
-          
-          if (!downloadUrl) {
+
+          if (!uploadResult) {
             toast.error('Photo upload failed. Your report will be submitted without photos.');
           }
-          
-          update({
-            step: step + 1,
-            photos: downloadUrl ? [downloadUrl, ...draft.photos.slice(1)] : draft.photos, // Keep local URL if upload failed
-            ...(aiData ? {
-              aiSuggestion: aiData,
-              category: aiData.category,
-              severity: aiData.severity,
-              title: aiData.suggestedTitle,
-              description: aiData.suggestedDescription,
-            } : {}),
-          });
-          
+
           if (!aiData) {
             toast.error('AI analysis failed. You can fill in the details manually.');
           }
-        } else {
-          update({ step: step + 1 });
+
+          setDraft((d) => ({
+            ...d,
+            photos: uploadResult ? [uploadResult, ...d.photos.slice(1)] : d.photos,
+            ...(aiData
+              ? {
+                  aiSuggestion: aiData,
+                  category: aiData.category,
+                  severity: aiData.severity,
+                  title: aiData.suggestedTitle,
+                  description: aiData.suggestedDescription,
+                }
+              : {}),
+          }));
+        } catch (error) {
+          console.error('AI Analysis step failed:', error);
+          toast.error('Something went wrong with AI analysis. You can fill in details manually.');
+        } finally {
+          setAiLoading(false);
         }
-      } catch (error) {
-        console.error("AI Analysis step failed:", error);
-        toast.error('Something went wrong. Please try again.');
-        update({ step: step + 1 }); // Proceed even if AI fails
-      } finally {
-        setAiLoading(false);
       }
       return;
     }
+
     if (step < STEPS.length - 1) update({ step: step + 1 });
   };
 
@@ -551,7 +549,23 @@ export default function ReportWizardPage() {
                     </p>
                   </CardContent>
                 </Card>
-              ) : null}
+              ) : (
+                // AI was skipped (no photo) or failed — show a clear fallback
+                <Card>
+                  <CardContent className="flex flex-col items-center py-12 text-center">
+                    <Sparkles className="mb-3 size-10 text-muted-foreground" />
+                    <p className="font-medium">No AI Analysis</p>
+                    <p className="mt-1 text-sm text-muted-foreground">
+                      {draft.photos.length === 0
+                        ? 'No photo was added. You can fill in the issue details manually.'
+                        : 'AI analysis was unavailable. You can fill in the issue details manually.'}
+                    </p>
+                    <p className="mt-3 text-xs text-muted-foreground">
+                      Press Continue to fill in the details yourself.
+                    </p>
+                  </CardContent>
+                </Card>
+              )}
             </div>
           )}
 
@@ -648,8 +662,8 @@ export default function ReportWizardPage() {
         <div className="mx-auto flex max-w-lg gap-3">
           {step < STEPS.length - 1 ? (
             <Button fullWidth onClick={next} disabled={aiLoading}>
-              Continue
-              <ChevronRight className="size-4" />
+              {aiLoading ? 'Analyzing...' : 'Continue'}
+              {!aiLoading && <ChevronRight className="size-4" />}
             </Button>
           ) : (
             <Button fullWidth onClick={submit} isLoading={submitting}>
