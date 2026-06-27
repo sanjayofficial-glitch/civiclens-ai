@@ -72,10 +72,21 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
         aria-busy={isLoading || undefined}
         {...props}
       >
-        {isLoading ? (
-          <Loader2 className="size-4 animate-spin" aria-hidden="true" />
-        ) : null}
-        {asChild ? <Slottable>{children}</Slottable> : children}
+        {asChild ? (
+          <Slottable>
+            {isLoading ? (
+              <Loader2 className="size-4 animate-spin" aria-hidden="true" />
+            ) : null}
+            {children}
+          </Slottable>
+        ) : (
+          <>
+            {isLoading ? (
+              <Loader2 className="size-4 animate-spin" aria-hidden="true" />
+            ) : null}
+            {children}
+          </>
+        )}
       </Comp>
     );
   },
