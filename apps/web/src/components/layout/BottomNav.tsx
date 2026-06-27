@@ -62,3 +62,23 @@ export function BottomNav() {
     </nav>
   );
 }
+
+export function NotificationBellLink() {
+  return (
+    <NavLink
+      to="/notifications"
+      className={({ isActive }) =>
+        cn(
+          'relative grid size-10 place-items-center rounded-full transition-colors',
+          isActive
+            ? 'bg-primary/10 text-primary'
+            : 'text-muted-foreground hover:bg-muted hover:text-foreground',
+        )
+      }
+      aria-label="Notifications"
+    >
+      <Bell className="size-5" aria-hidden="true" />
+      <span className="absolute right-1.5 top-1.5 size-2 rounded-full bg-destructive" />
+    </NavLink>
+  );
+}
