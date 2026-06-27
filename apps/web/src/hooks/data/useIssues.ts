@@ -3,7 +3,7 @@ import { IssueService, type IssueFilters } from '../../services/issue.service';
 import type { Issue } from '@blockseblock/shared';
 import { DocumentSnapshot } from 'firebase/firestore';
 
-export const useIssues = (filters?: IssueFilters, pageSize = 10) => {
+export const useIssues = (filters?: IssueFilters, pageSize = 10, refreshKey = 0) => {
   const [issues, setIssues] = useState<Issue[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
@@ -26,7 +26,7 @@ export const useIssues = (filters?: IssueFilters, pageSize = 10) => {
     );
 
     return () => unsub();
-  }, [JSON.stringify(filters), pageSize]);
+  }, [JSON.stringify(filters), pageSize, refreshKey]);
 
   return { issues, loading, error };
 };

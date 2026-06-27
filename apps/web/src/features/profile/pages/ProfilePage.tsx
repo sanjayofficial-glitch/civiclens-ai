@@ -1,3 +1,4 @@
+import { useState, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import {
@@ -7,6 +8,7 @@ import {
   Trophy,
   Star,
   ChevronRight,
+  RefreshCw,
 } from 'lucide-react';
 import { AppLayout, PageHeader } from '@/components/layout/AppLayout';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
@@ -17,16 +19,30 @@ import { Separator } from '@/components/ui/separator';
 import { IssueCard } from '@/components/shared/IssueCard';
 import { Skeleton } from '@/components/ui/skeleton';
 import { BADGES } from '@/lib/constants';
+import { cn } from '@/lib/utils';
 
 import { useUser } from '@/hooks/data/useUser';
 import { useIssues } from '@/hooks/data/useIssues';
+import { usePullToRefresh } from '@/hooks/usePullToRefresh';
 
 export default function ProfilePage() {
+  const [refreshKey, setRefreshKey] = useState(0);
+
   const { user, loading: userLoading } = useUser();
   const { issues, loading: issuesLoading, error: issuesError } = useIssues(
     user ? { reporterId: user.uid } : undefined,
-    10
+    10,
+    refreshKey,
   );
+
+  const handleRefresh = useCallback(async () => {
+    setRefreshKey((k) => k + 1);
+  }, []);
+
+  const { pullDistance, isRefreshing, touchHandlers } = usePullToRefresh({
+    onRefresh: handleRefresh,
+    disabled: issuesLoading,
+  });
 
   const earnedBadges = BADGES.filter((b) => user?.badges?.includes(b.id));
   const displayName = user?.displayName || 'Citizen';
@@ -48,8 +64,41 @@ export default function ProfilePage() {
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
-        className="space-y-6 px-4 py-4"
+        className="relative space-y-6 px-4 py-4"
+        {...touchHandlers}
       >
+        {/* Pull-to-refresh indicator */}
+        <div
+          className={cn(
+            'pointer-events-none absolute left-0 right-0 flex items-center justify-center transition-opacity',
+            pullDistance > 0 ? 'opacity-100' : 'opacity-0',
+          )}
+          style={{
+            top: -40 + Math.min(pullDistance, 40),
+            height: 40,
+          }}
+        >
+          <RefreshCw
+            className={cn(
+              'size-5 text-primary transition-transform',
+              isRefreshing && 'animate-spin',
+            )}
+            style={{
+              transform: isRefreshing
+                ? undefined
+                : `rotate(${(pullDistance / 60) * 360}deg)`,
+            }}
+          />
+          {isRefreshing ? (
+            <span className="ml-2 text-xs text-muted-foreground">
+              Refreshing...
+            </span>
+          ) : pullDistance >= 60 ? (
+            <span className="ml-2 text-xs text-muted-foreground">
+              Release to refresh
+            </span>
+          ) : null}
+        </div>
         <div className="flex flex-col items-center text-center">
           <Avatar className="size-20">
             <AvatarFallback className="bg-primary/15 text-2xl text-primary">
