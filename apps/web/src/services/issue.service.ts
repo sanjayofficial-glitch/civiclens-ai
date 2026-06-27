@@ -34,6 +34,11 @@ export const IssueService = {
     return updateDoc(docRef, { ...data, updatedAt: new Date().toISOString() });
   },
 
+  delete: async (id: string) => {
+    const docRef = doc(db, ISSUES_COLLECTION, id);
+    return deleteDoc(docRef);
+  },
+
   getIssues: async (filters: IssueFilters = {}, pageSize = 10, lastDoc?: DocumentSnapshot) => {
     const constraints: QueryConstraint[] = [];
     
