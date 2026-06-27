@@ -112,7 +112,7 @@ describe('Test 1A — AI key guard (Bug Condition)', () => {
       title: 'Pothole on Main Street',
       description: 'Deep pothole causing tyre damage',
       imageUrls: [],
-    }) as Record<string, unknown>;
+    }) as unknown as Record<string, unknown>;
 
     // EXPECTED AFTER FIX: usedFallback is true on the returned analysis
     // CURRENT (UNFIXED): fallbackAnalysis() does not set usedFallback:true — key is missing
@@ -231,7 +231,7 @@ describe('Test 1C — Field names (Bug Condition)', () => {
       title: 'Pothole',
       description: 'Pothole on Baker Street',
       imageUrls: [],
-    }) as Record<string, unknown>;
+    }) as unknown as Record<string, unknown>;
 
     // EXPECTED AFTER FIX: suggestedTitle and suggestedDescription are present
     // CURRENT (UNFIXED): result has 'title' and 'description' keys, NOT 'suggestedTitle'/'suggestedDescription'
