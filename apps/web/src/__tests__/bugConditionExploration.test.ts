@@ -152,6 +152,7 @@ describe('Test 3 — GPS stale cache (Bug Condition)', () => {
         altitudeAccuracy: null,
         heading: null,
         speed: null,
+        toJSON: () => ({}),
       },
       timestamp: staleTimestamp,
       toJSON: () => ({}),
