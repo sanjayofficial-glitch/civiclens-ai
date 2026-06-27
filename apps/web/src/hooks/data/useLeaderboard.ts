@@ -1,20 +1,20 @@
 import { useState, useEffect } from 'react';
 import { LeaderboardService } from '../../services/leaderboard.service';
-import type { User } from '@blockseblock/shared';
+import type { LeaderboardPeriod } from '@blockseblock/shared';
 
-export const useLeaderboard = (limitCount = 50) => {
-  const [leaders, setLeaders] = useState<User[]>([]);
+export const useLeaderboard = (period: LeaderboardPeriod, limitCount = 50) => {
+  const [leaders, setLeaders] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     setLoading(true);
-    const unsub = LeaderboardService.listenToTopUsers(limitCount, (fetchedLeaders) => {
+    const unsub = LeaderboardService.listenToLeaderboard(period, limitCount, (fetchedLeaders) => {
       setLeaders(fetchedLeaders);
       setLoading(false);
     });
 
     return () => unsub();
-  }, [limitCount]);
+  }, [period, limitCount]);
 
   return { leaders, loading };
 };

@@ -24,6 +24,7 @@ import { cn } from '@/lib/utils';
 import { useUser } from '@/hooks/data/useUser';
 import { useIssues } from '@/hooks/data/useIssues';
 import { usePullToRefresh } from '@/hooks/usePullToRefresh';
+import { AuthService } from '@/services/auth.service';
 
 export default function ProfilePage() {
   const [refreshKey, setRefreshKey] = useState(0);
@@ -225,7 +226,7 @@ export default function ProfilePage() {
           <button
             type="button"
             className="flex w-full items-center justify-between rounded-xl p-3 text-destructive transition-colors hover:bg-destructive/10"
-            onClick={() => {}}
+            onClick={() => AuthService.logOut()}
           >
             <span className="flex items-center gap-3 text-sm">
               <LogOut className="size-5" aria-hidden="true" />

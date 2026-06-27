@@ -34,20 +34,33 @@ function LocateButton() {
   const map = useMap();
 
   const locate = useCallback(() => {
-    map.flyTo(DEFAULT_CENTER, DEFAULT_ZOOM, { duration: 1 });
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          map.flyTo([pos.coords.latitude, pos.coords.longitude], DEFAULT_ZOOM, { duration: 1.5 });
+        },
+        () => {
+          map.flyTo(DEFAULT_CENTER, DEFAULT_ZOOM, { duration: 1 });
+        }
+      );
+    } else {
+      map.flyTo(DEFAULT_CENTER, DEFAULT_ZOOM, { duration: 1 });
+    }
   }, [map]);
 
   return (
-    <Button
-      type="button"
-      aria-label="Go to current location"
-      variant="outline"
-      size="icon"
-      className="bg-background shadow-md"
-      onClick={locate}
-    >
-      <Crosshair className="size-5" />
-    </Button>
+    <div className="absolute bottom-36 right-4 z-[500] pointer-events-auto">
+      <Button
+        type="button"
+        aria-label="Go to current location"
+        variant="outline"
+        size="icon"
+        className="bg-background shadow-md"
+        onClick={locate}
+      >
+        <Crosshair className="size-5" />
+      </Button>
+    </div>
   );
 }
 
@@ -58,7 +71,10 @@ export default function MapPage() {
   const [filterOpen, setFilterOpen] = useState(false);
   const [selectedId, setSelectedId] = useState<string | null>(null);
 
-  const selected = issues.find((i) => i.id === selectedId);
+  const validIssues = issues.filter(
+    (i) => i.location?.geopoint?.latitude != null && i.location?.geopoint?.longitude != null
+  );
+  const selected = validIssues.find((i) => i.id === selectedId);
 
   return (
     <AppLayout className="relative !pb-0">
@@ -74,7 +90,7 @@ export default function MapPage() {
             url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
           />
           <MarkerClusterGroup chunkedLoading>
-            {issues.map((issue) => (
+            {validIssues.map((issue) => (
               <Marker
                 key={issue.id}
                 position={[

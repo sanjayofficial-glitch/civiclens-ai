@@ -56,6 +56,14 @@ export default function GovernmentDashboardPage() {
     return true;
   });
 
+  const validIssues = issues.filter(
+    (i) => i.location?.geopoint?.latitude != null && i.location?.geopoint?.longitude != null
+  );
+
+  const defaultCenter: [number, number] = validIssues.length > 0 
+    ? [validIssues[0].location.geopoint.latitude, validIssues[0].location.geopoint.longitude]
+    : [40.7128, -74.006];
+
   const maxChart = Math.max(...CHART_DATA.map((d) => d.value));
 
   return (
@@ -234,12 +242,12 @@ export default function GovernmentDashboardPage() {
             </CardHeader>
             <CardContent className="p-0">
               <MapContainer
-                center={[40.7128, -74.006]}
+                center={defaultCenter}
                 zoom={13}
                 className="h-64 rounded-b-xl"
               >
                 <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
-                {issues.map((issue) => (
+                {validIssues.map((issue) => (
                   <Marker
                     key={issue.id}
                     position={[

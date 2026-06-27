@@ -228,7 +228,7 @@ export default function ReportWizardPage() {
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const galleryInputRef = useRef<HTMLInputElement>(null);
-  const searchTimeoutRef = useRef<ReturnType<typeof setTimeout>>();
+  const searchTimeoutRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 
   const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
     // Camera step uses a FileReader/DataURL path; just pass through

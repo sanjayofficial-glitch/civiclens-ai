@@ -10,7 +10,7 @@ import {
   Sparkles,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
-import type { NotificationType, Notification } from '@blockseblock/shared';
+import { timestampToDate, type NotificationType, type Notification } from '@blockseblock/shared';
 import { AppLayout, PageHeader } from '@/components/layout/AppLayout';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -47,7 +47,7 @@ function groupByDate(notifications: (Notification & { id: string })[]) {
   const olderItems: (Notification & { id: string })[] = [];
 
   for (const n of notifications) {
-    const d = new Date(String(n.createdAt));
+    const d = timestampToDate(n.createdAt);
     if (d >= today) todayItems.push(n);
     else if (d >= yesterday) yesterdayItems.push(n);
     else olderItems.push(n);
@@ -176,7 +176,7 @@ export default function NotificationsPage() {
                               {n.body}
                             </p>
                             <p className="mt-1 text-xs text-muted-foreground">
-                              {formatRelativeTime(String(n.createdAt))}
+                              {formatRelativeTime(n.createdAt)}
                             </p>
                           </div>
                         </Link>

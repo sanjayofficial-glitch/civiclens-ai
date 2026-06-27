@@ -241,7 +241,7 @@ export default function IssueDetailsPage() {
                     <div className="pb-4">
                       <p className="text-sm font-medium">{meta.label}</p>
                       <p className="text-xs text-muted-foreground">
-                        {formatRelativeTime(entry.at as string)} · {entry.by}
+                        {formatRelativeTime(entry.at)} · {entry.by}
                       </p>
                     </div>
                   </div>
@@ -297,7 +297,7 @@ export default function IssueDetailsPage() {
                     <p className="text-xs font-medium">User {c.userId.substring(0,4)}</p>
                     <p className="mt-1 text-sm">{c.text}</p>
                     <p className="mt-1 text-xs text-muted-foreground">
-                      {formatRelativeTime(c.createdAt as string)}
+                      {formatRelativeTime(c.createdAt)}
                     </p>
                   </div>
                 </div>

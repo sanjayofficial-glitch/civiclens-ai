@@ -21,6 +21,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { useUser } from '@/hooks/data/useUser';
 import { useIssues } from '@/hooks/data/useIssues';
 import { useCommunityStats } from '@/hooks/data/useAnalytics';
+import { formatRelativeTime } from '@/lib/constants';
 
 const container = {
   hidden: { opacity: 0 },
@@ -51,7 +52,7 @@ export default function HomePage() {
   const recentActivity = issues.slice(0, 3).map((issue, i) => ({
     icon: recentActivityIcons[i] ?? CheckCircle,
     text: issue.title,
-    time: formatRelativeTime(String(issue.createdAt)),
+    time: formatRelativeTime(issue.createdAt),
     color: recentActivityColors[i] ?? 'text-muted-foreground',
   }));
 

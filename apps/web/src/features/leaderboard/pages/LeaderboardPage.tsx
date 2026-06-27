@@ -28,7 +28,7 @@ function RankIcon({ rank }: { rank: number }) {
 
 export default function LeaderboardPage() {
   const [period, setPeriod] = useState<LeaderboardPeriod>('weekly');
-  const { leaders, loading } = useLeaderboard(50);
+  const { leaders, loading } = useLeaderboard(period, 50);
   const { user } = useUser();
   const entries = leaders;
   
