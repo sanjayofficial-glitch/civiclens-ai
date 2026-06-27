@@ -4,6 +4,7 @@ import { db } from '../lib/firebase';
 import { createNotification } from '../services/notificationService';
 import { adjustReputation } from '../services/reputationService';
 import { DEFAULT_REPUTATION } from '../config';
+import { recordDailyMetrics } from '../services/analyticsService';
 
 export const onCommentCreated = onDocumentCreated('comments/{commentId}', async (event) => {
   const snap = event.data;
@@ -17,6 +18,8 @@ export const onCommentCreated = onDocumentCreated('comments/{commentId}', async 
   }
 
   await adjustReputation(comment.userId, DEFAULT_REPUTATION.COMMENT_CREATED);
+
+  await recordDailyMetrics({ comments: 1 });
 
   const issueSnap = await db.collection('issues').doc(comment.issueId).get();
   if (!issueSnap.exists) {

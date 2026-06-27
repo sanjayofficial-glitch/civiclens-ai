@@ -1,5 +1,5 @@
 import { NavLink } from 'react-router-dom';
-import { Home, Map as MapIcon, Plus, Bell, User } from 'lucide-react';
+import { Home, Map as MapIcon, Plus, BarChart3, Bell, User } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 export function BottomNav() {
@@ -7,7 +7,7 @@ export function BottomNav() {
     { to: '/home', label: 'Home', icon: Home },
     { to: '/map', label: 'Map', icon: MapIcon },
     { to: '/report', label: 'Report', icon: Plus, isFab: true },
-    { to: '/notifications', label: 'Alerts', icon: Bell },
+    { to: '/impact', label: 'Impact', icon: BarChart3 },
     { to: '/profile', label: 'Profile', icon: User },
   ] as const;
 

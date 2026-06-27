@@ -1,7 +1,7 @@
 import { onDocumentUpdated } from 'firebase-functions/v2/firestore';
 
 import { createNotification } from '../services/notificationService';
-import { recordAnalyticsEvent } from '../services/analyticsService';
+import { recordAnalyticsEvent, recordStatusMetrics } from '../services/analyticsService';
 
 export const onIssueUpdated = onDocumentUpdated('issues/{issueId}', async (event) => {
   const before = event.data?.before.data();
@@ -21,6 +21,8 @@ export const onIssueUpdated = onDocumentUpdated('issues/{issueId}', async (event
         data: { issueId: event.params.issueId, status: after.status },
       });
     }
+
+    await recordStatusMetrics(after.status);
   }
 
   if (after.status === 'resolved') {

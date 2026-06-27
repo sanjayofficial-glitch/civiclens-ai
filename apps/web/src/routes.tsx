@@ -17,6 +17,7 @@ const MapPage = lazy(() => import('@/features/map/pages/MapPage'));
 const ReportWizardPage = lazy(() => import('@/features/report/pages/ReportWizardPage'));
 const IssueDetailsPage = lazy(() => import('@/features/issues/pages/IssueDetailsPage'));
 const LeaderboardPage = lazy(() => import('@/features/leaderboard/pages/LeaderboardPage'));
+const ImpactPage = lazy(() => import('@/features/impact/pages/ImpactPage'));
 const NotificationsPage = lazy(() => import('@/features/notifications/pages/NotificationsPage'));
 const ProfilePage = lazy(() => import('@/features/profile/pages/ProfilePage'));
 const SettingsPage = lazy(() => import('@/features/profile/pages/SettingsPage'));
@@ -133,6 +134,14 @@ export const router = createBrowserRouter([
         element: (
           <Lazy>
             <LeaderboardPage />
+          </Lazy>
+        ),
+      },
+      {
+        path: '/impact',
+        element: (
+          <Lazy>
+            <ImpactPage />
           </Lazy>
         ),
       },

@@ -4,6 +4,7 @@ import { db } from '../lib/firebase';
 import { adjustReputation } from '../services/reputationService';
 import { DEFAULT_REPUTATION } from '../config';
 import { createNotification } from '../services/notificationService';
+import { recordDailyMetrics } from '../services/analyticsService';
 
 export const onVoteCreated = onDocumentCreated('votes/{voteId}', async (event) => {
   const snap = event.data;
@@ -22,6 +23,10 @@ export const onVoteCreated = onDocumentCreated('votes/{voteId}', async (event) =
       ? DEFAULT_REPUTATION.UPVOTE_CAST
       : DEFAULT_REPUTATION.DOWNVOTE_CAST,
   );
+
+  if (vote.type === 'upvote') {
+    await recordDailyMetrics({ verifications: 1 });
+  }
 
   const issueSnap = await db.collection('issues').doc(vote.issueId).get();
   if (!issueSnap.exists) {
