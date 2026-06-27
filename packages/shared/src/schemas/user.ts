@@ -17,7 +17,7 @@ export const userSchema = z.object({
   streakDays: z.number().int().nonnegative(),
   lastActive: timestampSchema,
   location: geoPointSchema.optional(),
-  fcmTokens: z.array(z.string()),
+  fcmTokens: z.array(z.string()).optional().default([]),
   createdAt: timestampSchema,
   updatedAt: timestampSchema,
 });

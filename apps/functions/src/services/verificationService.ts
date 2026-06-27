@@ -27,5 +27,27 @@ export async function registerVote(input: {
       type: input.type,
       createdAt: FieldValue.serverTimestamp(),
     });
+
+    const issue = issueSnap.data() as {
+      verification?: { upvotes?: number; downvotes?: number; verifiedBy?: string[] };
+    };
+
+    const upvotes = Number(issue.verification?.upvotes ?? 0) + (input.type === 'upvote' ? 1 : 0);
+    const downvotes = Number(issue.verification?.downvotes ?? 0) + (input.type === 'downvote' ? 1 : 0);
+    const verifiedBy = Array.from(new Set([...(issue.verification?.verifiedBy ?? []), input.userId]));
+
+    transaction.set(
+      issueRef,
+      {
+        verification: {
+          upvotes,
+          downvotes,
+          verifiedBy,
+          verifiedAt: FieldValue.serverTimestamp(),
+        },
+        updatedAt: FieldValue.serverTimestamp(),
+      },
+      { merge: true },
+    );
   });
 }
