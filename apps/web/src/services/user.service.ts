@@ -1,6 +1,7 @@
 import { doc, getDoc, setDoc, updateDoc, serverTimestamp } from 'firebase/firestore';
-import { db } from '../lib/firebase/firestore';
+import { db } from '../lib/firebase/firestore.service';
 import type { User } from '@blockseblock/shared';
+import { userConverter } from './converters';
 
 const USERS_COLLECTION = 'users';
 
@@ -10,8 +11,8 @@ export const UserService = {
   },
 
   getProfile: async (uid: string) => {
-    const snap = await getDoc(doc(db, USERS_COLLECTION, uid));
-    return snap.exists() ? { uid: snap.id, ...snap.data() } as User : null;
+    const snap = await getDoc(doc(db, USERS_COLLECTION, uid).withConverter(userConverter));
+    return snap.exists() ? snap.data() : null;
   },
 
   updateProfile: async (uid: string, data: Partial<User>) => {
@@ -40,7 +41,7 @@ export const UserService = {
           streakDays: data.streakDays ?? 0,
           lastActive: serverTimestamp(),
           location: data.location,
-          locationLabel: (data as Partial<User> & { locationLabel?: string }).locationLabel,
+          locationLabel: data.locationLabel,
           fcmTokens: data.fcmTokens ?? [],
           createdAt: serverTimestamp(),
           updatedAt: serverTimestamp(),

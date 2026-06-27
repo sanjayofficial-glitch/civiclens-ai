@@ -22,13 +22,20 @@ import { Textarea } from '@/components/ui/textarea';
 import { Skeleton } from '@/components/ui/skeleton';
 import { ErrorState } from '@/components/ui/error-state';
 import { Separator } from '@/components/ui/separator';
-import { getIssueById, MOCK_COMMENTS, MOCK_STATUS_HISTORY, formatRelativeTime } from '@/data/mock-data';
+import { formatRelativeTime } from '@/lib/constants';
 import {
   getCategoryMeta,
   getSeverityMeta,
   getStatusMeta,
 } from '@/lib/issue-meta';
 import 'leaflet/dist/leaflet.css';
+
+import { useIssue } from '@/hooks/data/useIssue';
+import { useComments } from '@/hooks/data/useComments';
+import { useUserVote } from '@/hooks/data/useUserVote';
+import { CommentService } from '@/services/comment.service';
+import { VoteService } from '@/services/vote.service';
+import { useAuth } from '@/hooks/useAuth';
 
 const pinIcon = L.divIcon({
   className: '',
@@ -39,15 +46,15 @@ const pinIcon = L.divIcon({
 
 export default function IssueDetailsPage() {
   const { id } = useParams<{ id: string }>();
-  const [loading] = useState(false);
-  const [error] = useState(false);
+  const { issue, loading: issueLoading, error: issueError } = useIssue(id);
+  const { comments, loading: commentsLoading } = useComments(id);
+  const { userVote, setUserVote } = useUserVote(id);
+  const { user } = useAuth();
+  
   const [imageIndex, setImageIndex] = useState(0);
-  const [comment, setComment] = useState('');
-  const [upvoted, setUpvoted] = useState(false);
+  const [commentText, setCommentText] = useState('');
 
-  const issue = id ? getIssueById(id) : undefined;
-
-  if (loading) {
+  if (issueLoading) {
     return (
       <AppLayout hideNav>
         <div className="space-y-4 p-4">
@@ -60,7 +67,7 @@ export default function IssueDetailsPage() {
     );
   }
 
-  if (error || !issue) {
+  if (issueError || !issue) {
     return (
       <AppLayout hideNav>
         <ErrorState
@@ -80,7 +87,29 @@ export default function IssueDetailsPage() {
   const severity = getSeverityMeta(issue.severity);
   const category = getCategoryMeta(issue.category);
   const CategoryIcon = category.icon;
-  const images = issue.media.images;
+  const images = issue.media?.images || [];
+
+  const handleVote = async (type: 'up' | 'down') => {
+    if (!user || !id) return; // TODO: Prompt login
+    // Optimistic UI handled by VoteService triggering issue snapshot
+    await VoteService.castVote(id, user.uid, type);
+    setUserVote(userVote === type ? null : type);
+  };
+
+  const handleComment = async () => {
+    if (!user || !id || !commentText.trim()) return;
+    const text = commentText.trim();
+    setCommentText('');
+    await CommentService.create({
+      issueId: id,
+      userId: user.uid,
+      text,
+    });
+  };
+
+  const statusHistory = [
+    { status: issue.status, at: issue.updatedAt, by: 'System' }
+  ];
 
   return (
     <AppLayout hideNav>
@@ -168,19 +197,23 @@ export default function IssueDetailsPage() {
             <h2 className="mb-3 text-sm font-semibold">Community Verification</h2>
             <div className="flex items-center gap-3">
               <Button
-                variant={upvoted ? 'default' : 'outline'}
+                variant={userVote === 'up' ? 'default' : 'outline'}
                 size="sm"
-                onClick={() => setUpvoted(!upvoted)}
+                onClick={() => handleVote('up')}
               >
                 <ThumbsUp className="size-4" aria-hidden="true" />
-                {issue.verification.upvotes + (upvoted ? 1 : 0)}
+                {issue.verification?.upvotes || 0}
               </Button>
-              <Button variant="outline" size="sm">
+              <Button 
+                variant={userVote === 'down' ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => handleVote('down')}
+              >
                 <ThumbsDown className="size-4" aria-hidden="true" />
-                {issue.verification.downvotes}
+                {issue.verification?.downvotes || 0}
               </Button>
               <span className="text-xs text-muted-foreground">
-                {issue.verification.verifiedBy.length} verified
+                {(issue.verification?.verifiedBy || []).length} verified
               </span>
             </div>
           </section>
@@ -195,20 +228,20 @@ export default function IssueDetailsPage() {
           <section aria-label="Status timeline">
             <h2 className="mb-3 text-sm font-semibold">Status History</h2>
             <div className="space-y-0">
-              {MOCK_STATUS_HISTORY.map((entry, i) => {
+              {statusHistory.map((entry, i) => {
                 const meta = getStatusMeta(entry.status);
                 return (
                   <div key={i} className="flex gap-3">
                     <div className="flex flex-col items-center">
                       <div className={`size-3 rounded-full ${meta.softBadge}`} />
-                      {i < MOCK_STATUS_HISTORY.length - 1 && (
+                      {i < statusHistory.length - 1 && (
                         <div className="w-px flex-1 bg-border" />
                       )}
                     </div>
                     <div className="pb-4">
                       <p className="text-sm font-medium">{meta.label}</p>
                       <p className="text-xs text-muted-foreground">
-                        {formatRelativeTime(entry.at)} · {entry.by}
+                        {formatRelativeTime(entry.at as string)} · {entry.by}
                       </p>
                     </div>
                   </div>
@@ -247,21 +280,24 @@ export default function IssueDetailsPage() {
 
           <section aria-label="Comments">
             <h2 className="mb-3 text-sm font-semibold">
-              Comments ({MOCK_COMMENTS.length})
+              Comments ({comments.length})
             </h2>
             <div className="space-y-3">
-              {MOCK_COMMENTS.map((c) => (
+              {commentsLoading ? (
+                <Skeleton className="h-16 w-full rounded-xl" />
+              ) : comments.map((c) => (
                 <div key={c.id} className="flex gap-3">
                   <Avatar className="size-8">
                     <AvatarFallback className="text-xs">
-                      {c.displayName.slice(0, 2)}
+                      {/* Using User ID substring if we don't fetch User object per comment */}
+                      {c.userId.substring(0, 2).toUpperCase()}
                     </AvatarFallback>
                   </Avatar>
                   <div className="flex-1 rounded-xl bg-muted/50 p-3">
-                    <p className="text-xs font-medium">{c.displayName}</p>
+                    <p className="text-xs font-medium">User {c.userId.substring(0,4)}</p>
                     <p className="mt-1 text-sm">{c.text}</p>
                     <p className="mt-1 text-xs text-muted-foreground">
-                      {formatRelativeTime(c.createdAt)}
+                      {formatRelativeTime(c.createdAt as string)}
                     </p>
                   </div>
                 </div>
@@ -271,11 +307,11 @@ export default function IssueDetailsPage() {
               <Textarea
                 placeholder="Add a comment..."
                 rows={2}
-                value={comment}
-                onChange={(e) => setComment(e.target.value)}
+                value={commentText}
+                onChange={(e) => setCommentText(e.target.value)}
                 className="flex-1"
               />
-              <Button size="icon" aria-label="Send comment">
+              <Button size="icon" aria-label="Send comment" onClick={handleComment}>
                 <Send className="size-4" />
               </Button>
             </div>

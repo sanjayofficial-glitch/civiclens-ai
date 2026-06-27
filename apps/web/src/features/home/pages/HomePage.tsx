@@ -16,7 +16,11 @@ import { IssueCard } from '@/components/shared/IssueCard';
 import { StatCard, QuickAction } from '@/components/shared/StatCard';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
-import { MOCK_ISSUES, MOCK_STATS, MOCK_USER } from '@/data/mock-data';
+import { Skeleton } from '@/components/ui/skeleton';
+
+import { useUser } from '@/hooks/data/useUser';
+import { useIssues } from '@/hooks/data/useIssues';
+import { useCommunityStats } from '@/hooks/data/useAnalytics';
 
 const container = {
   hidden: { opacity: 0 },
@@ -33,8 +37,12 @@ export default function HomePage() {
   const greeting =
     hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening';
 
-  const nearby = MOCK_ISSUES.slice(0, 3);
-  const trending = [...MOCK_ISSUES]
+  const { user, loading: userLoading } = useUser();
+  const { issues, loading: issuesLoading } = useIssues({}, 10);
+  const { stats, loading: statsLoading } = useCommunityStats();
+
+  const nearby = issues.slice(0, 3);
+  const trending = [...issues]
     .sort((a, b) => b.verification.upvotes - a.verification.upvotes)
     .slice(0, 3);
 
@@ -44,10 +52,13 @@ export default function HomePage() {
     { icon: Trophy, text: 'Moved to #3 on leaderboard', time: '1d ago', color: 'text-warning' },
   ];
 
+  const displayName = user?.displayName ?? 'Citizen';
+  const firstName = displayName.split(' ')[0];
+
   return (
     <AppLayout>
       <PageHeader
-        title={`${greeting}, ${MOCK_USER.displayName.split(' ')[0]}`}
+        title={`${greeting}, ${firstName}`}
         subtitle="Here's what's happening nearby"
         action={<NotificationBellLink />}
       />
@@ -76,14 +87,14 @@ export default function HomePage() {
           <div className="grid grid-cols-2 gap-3">
             <StatCard
               label="Your Reports"
-              value={MOCK_USER.issuesReported}
+              value={userLoading ? 0 : (user?.issuesReported ?? 0)}
               icon={FileText}
               trend="+3 this week"
               trendUp
             />
             <StatCard
               label="Verifications"
-              value={MOCK_USER.issuesVerified}
+              value={userLoading ? 0 : (user?.issuesVerified ?? 0)}
               icon={CheckCircle}
               trend="+8 this week"
               trendUp
@@ -99,7 +110,12 @@ export default function HomePage() {
             </Link>
           </div>
           <div className="space-y-3">
-            {nearby.map((issue) => (
+            {issuesLoading ? (
+              <>
+                <Skeleton className="h-32 w-full rounded-xl" />
+                <Skeleton className="h-32 w-full rounded-xl" />
+              </>
+            ) : nearby.map((issue) => (
               <IssueCard key={issue.id} issue={issue} variant="horizontal" />
             ))}
           </div>
@@ -111,7 +127,9 @@ export default function HomePage() {
             <h2 className="text-sm font-semibold">Trending</h2>
           </div>
           <div className="flex gap-3 overflow-x-auto pb-1 no-scrollbar">
-            {trending.map((issue) => (
+            {issuesLoading ? (
+              <Skeleton className="h-48 w-64 shrink-0 rounded-xl" />
+            ) : trending.map((issue) => (
               <div key={issue.id} className="w-64 shrink-0">
                 <IssueCard issue={issue} variant="default" />
               </div>
@@ -124,11 +142,15 @@ export default function HomePage() {
           <div className="glass rounded-xl border border-border/50 p-4">
             <div className="grid grid-cols-2 gap-4 text-center">
               <div>
-                <p className="text-2xl font-bold">{MOCK_STATS.totalReports.toLocaleString()}</p>
+                <p className="text-2xl font-bold">
+                  {statsLoading ? '-' : (stats?.totalReports.toLocaleString() ?? '0')}
+                </p>
                 <p className="text-xs text-muted-foreground">Total Reports</p>
               </div>
               <div>
-                <p className="text-2xl font-bold text-success">{MOCK_STATS.resolvedThisWeek}</p>
+                <p className="text-2xl font-bold text-success">
+                  {statsLoading ? '-' : (stats?.resolvedThisWeek ?? '0')}
+                </p>
                 <p className="text-xs text-muted-foreground">Resolved This Week</p>
               </div>
             </div>
@@ -161,12 +183,14 @@ export default function HomePage() {
             className="flex items-center gap-3 rounded-xl border border-primary/20 bg-primary/5 p-4 transition-colors hover:bg-primary/10"
           >
             <Avatar>
-              <AvatarFallback className="bg-primary/15 text-primary">AR</AvatarFallback>
+              <AvatarFallback className="bg-primary/15 text-primary">
+                {firstName.substring(0, 2).toUpperCase()}
+              </AvatarFallback>
             </Avatar>
             <div className="flex-1">
               <p className="text-sm font-medium">You&apos;re ranked #3 this week</p>
               <p className="text-xs text-muted-foreground">
-                {MOCK_USER.reputation.toLocaleString()} points · {MOCK_USER.streakDays}-day streak
+                {userLoading ? '-' : (user?.reputation.toLocaleString() ?? '0')} points · {userLoading ? '-' : (user?.streakDays ?? '0')}-day streak
               </p>
             </div>
             <Badge variant="secondary">View</Badge>
