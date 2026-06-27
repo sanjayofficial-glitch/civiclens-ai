@@ -205,15 +205,26 @@ export default function ReportWizardPage() {
   };
 
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const galleryInputRef = useRef<HTMLInputElement>(null);
 
   const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
+    // Camera step uses a FileReader/DataURL path; just pass through
     const file = event.target.files?.[0];
     if (file) {
       const objectUrl = URL.createObjectURL(file);
-      update({
-        photos: [...draft.photos, objectUrl],
-      });
+      update({ photos: [...draft.photos, objectUrl] });
     }
+    // Reset so the same file can be re-selected
+    event.target.value = '';
+  };
+
+  const handleGallerySelect = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(event.target.files ?? []);
+    if (files.length === 0) return;
+    const newUrls = files.map((f) => URL.createObjectURL(f));
+    update({ photos: [...draft.photos, ...newUrls] });
+    // Reset so the same file(s) can be re-selected after removal
+    event.target.value = '';
   };
 
   return (
@@ -304,12 +315,40 @@ export default function ReportWizardPage() {
               <p className="text-sm text-muted-foreground">
                 Add more photos from your gallery (optional)
               </p>
+              <input 
+                type="file" 
+                accept="image/*" 
+                multiple
+                className="hidden" 
+                ref={galleryInputRef} 
+                onChange={handleGallerySelect} 
+              />
               <div className="grid grid-cols-3 gap-2">
-                {[1, 2, 3, 4, 5, 6].map((n) => (
+                {draft.photos.length > 0 && draft.photos.map((p, i) => (
+                  <div key={i} className="relative aspect-square">
+                    <img
+                      src={p}
+                      alt=""
+                      className="size-full rounded-xl object-cover"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => {
+                        URL.revokeObjectURL(p);
+                        update({ photos: draft.photos.filter((_, j) => j !== i) });
+                      }}
+                      className="absolute -right-1.5 -top-1.5 grid size-5 place-items-center rounded-full bg-destructive text-destructive-foreground text-xs shadow-sm"
+                      aria-label="Remove photo"
+                    >
+                      ×
+                    </button>
+                  </div>
+                ))}
+                {Array.from({ length: Math.max(0, 6 - draft.photos.length) }).map((_, n) => (
                   <button
-                    key={n}
+                    key={`empty-${n}`}
                     type="button"
-                    onClick={() => fileInputRef.current?.click()}
+                    onClick={() => galleryInputRef.current?.click()}
                     className="glass aspect-square rounded-xl border border-border/50 transition-colors hover:border-primary/50"
                   >
                     <ImagePlus className="mx-auto size-6 text-muted-foreground" />
