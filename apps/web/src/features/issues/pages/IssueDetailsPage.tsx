@@ -89,7 +89,7 @@ export default function IssueDetailsPage() {
   const CategoryIcon = category.icon;
   const images = issue.media?.images || [];
 
-  const handleVote = async (type: 'up' | 'down') => {
+  const handleVote = async (type: 'upvote' | 'downvote') => {
     if (!user || !id) return; // TODO: Prompt login
     // Optimistic UI handled by VoteService triggering issue snapshot
     await VoteService.castVote(id, user.uid, type);
@@ -197,17 +197,17 @@ export default function IssueDetailsPage() {
             <h2 className="mb-3 text-sm font-semibold">Community Verification</h2>
             <div className="flex items-center gap-3">
               <Button
-                variant={userVote === 'up' ? 'default' : 'outline'}
+                variant={userVote === 'upvote' ? 'default' : 'outline'}
                 size="sm"
-                onClick={() => handleVote('up')}
+                onClick={() => handleVote('upvote')}
               >
                 <ThumbsUp className="size-4" aria-hidden="true" />
                 {issue.verification?.upvotes || 0}
               </Button>
               <Button 
-                variant={userVote === 'down' ? 'default' : 'outline'}
+                variant={userVote === 'downvote' ? 'default' : 'outline'}
                 size="sm"
-                onClick={() => handleVote('down')}
+                onClick={() => handleVote('downvote')}
               >
                 <ThumbsDown className="size-4" aria-hidden="true" />
                 {issue.verification?.downvotes || 0}

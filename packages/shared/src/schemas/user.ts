@@ -11,6 +11,8 @@ export const userSchema = z.object({
   phoneNumber: z.string().nullable(),
   role: userRoleSchema,
   reputation: z.number().int(),
+  issuesReported: z.number().int().default(0),
+  issuesVerified: z.number().int().default(0),
   badges: z.array(z.string()),
   streakDays: z.number().int().nonnegative(),
   lastActive: timestampSchema,

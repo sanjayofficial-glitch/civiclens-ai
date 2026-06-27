@@ -28,7 +28,7 @@ export const VoteService = {
         if (existingVote.type === type) {
           // Unvote (remove vote)
           transaction.delete(voteRef);
-          if (type === 'up') {
+          if (type === 'upvote') {
             upvotes--;
             verifiedBy = verifiedBy.filter((id: string) => id !== userId);
           } else {
@@ -43,7 +43,7 @@ export const VoteService = {
             createdAt: existingVote.createdAt
           } as Vote & { id: string });
           
-          if (type === 'up') {
+          if (type === 'upvote') {
             upvotes++;
             downvotes--;
             verifiedBy.push(userId);
@@ -62,7 +62,7 @@ export const VoteService = {
           createdAt: new Date().toISOString()
         } as Vote & { id: string });
         
-        if (type === 'up') {
+        if (type === 'upvote') {
           upvotes++;
           verifiedBy.push(userId);
         } else {

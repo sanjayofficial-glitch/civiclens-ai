@@ -7,6 +7,8 @@ const GLOBAL_DOC = 'global';
 export interface GlobalStats {
   totalReports: number;
   resolvedThisWeek: number;
+  activeIssues: number;
+  communityVerifications: number;
 }
 
 export const AnalyticsService = {

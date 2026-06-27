@@ -19,6 +19,8 @@ export interface User {
   phoneNumber: string | null;
   role: UserRole;
   reputation: number;
+  issuesReported: number;
+  issuesVerified: number;
   badges: string[];
   streakDays: number;
   lastActive: TimestampInput;
