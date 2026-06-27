@@ -6,15 +6,45 @@ import { parseInput } from '../lib/validation';
 import { analyzeIssueMedia } from '../services/geminiService';
 import { db, FieldValue } from '../lib/firebase';
 
-const schema = z.object({
+/**
+ * Callable that accepts either:
+ *   - `issueId`: reads the issue doc from Firestore and analyzes its images
+ *   - `imageUrl` + optional `title`/`description`/`locationText`: analyzes a single image directly
+ *
+ * The direct mode is used by the ReportWizard for preview analysis before submission.
+ * The issueId mode is used for post-submission re-analysis.
+ */
+const issueIdSchema = z.object({
   issueId: z.string().min(1),
+});
+
+const directSchema = z.object({
+  imageUrl: z.string().url(),
+  title: z.string().optional().default(''),
+  description: z.string().optional().default(''),
+  locationText: z.string().optional().default(''),
 });
 
 export const analyzeIssueImage = onCall(async (request) => {
   assertAuth(request.auth);
-  const input = parseInput<{ issueId: string }>(schema, request.data ?? {});
 
-  const snap = await db.collection('issues').doc(input.issueId).get();
+  // Try directSchema first (wizard mode), fall back to issueIdSchema
+  const directResult = directSchema.safeParse(request.data ?? {});
+  if (directResult.success) {
+    const { imageUrl, title, description, locationText } = directResult.data;
+    const analysis = await analyzeIssueMedia({
+      title,
+      description,
+      imageUrls: [imageUrl],
+      locationText: locationText || undefined,
+    });
+
+    return { status: 'success', analysis };
+  }
+
+  // Try issueIdSchema
+  const parsed = parseInput<{ issueId: string }>(issueIdSchema, request.data ?? {});
+  const snap = await db.collection('issues').doc(parsed.issueId).get();
   if (!snap.exists) {
     fail('not-found', 'Issue not found.');
   }
@@ -33,6 +63,7 @@ export const analyzeIssueImage = onCall(async (request) => {
     locationText: issue.location?.address,
   });
 
+  // Persist analysis back to the issue doc
   await snap.ref.set(
     {
       aiAnalysis: analysis,
@@ -41,8 +72,5 @@ export const analyzeIssueImage = onCall(async (request) => {
     { merge: true },
   );
 
-  return {
-    status: 'success',
-    analysis,
-  };
+  return { status: 'success', analysis };
 });

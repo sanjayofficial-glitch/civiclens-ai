@@ -152,60 +152,76 @@ export default function ReportWizardPage() {
     }
   };
 
+  const runAiAnalysis = useCallback(async (blobs: Blob[]) => {
+    const firstBlob = blobs[0];
+    const title = draft.title;
+    const description = draft.description;
+    setAiLoading(true);
+
+    try {
+      // Upload ALL photos to Firebase Storage in parallel first
+      // (we need the URL to try the server-side callable)
+      const uploadPromises = blobs.map((blob, idx) => {
+        const uploadPath = `issues/${Date.now()}_${idx}_${Math.random().toString(36).slice(2)}`;
+        return UploadService.uploadFile(
+          new File([blob], `photo_${idx}.jpg`, { type: blob.type || 'image/jpeg' }),
+          uploadPath,
+        ).catch((err: unknown) => {
+          console.error('Photo upload error:', err);
+          return null as string | null;
+        });
+      });
+
+      const uploadUrls = await Promise.all(uploadPromises);
+      const successfulUrls = uploadUrls.filter((u): u is string => u !== null);
+
+      if (successfulUrls.length === 0) {
+        toast.error('Photo upload failed — check storage permissions and try again.');
+        return;
+      }
+      if (successfulUrls.length < blobs.length) {
+        toast.warning(`${blobs.length - successfulUrls.length} photo(s) failed to upload.`);
+      }
+
+      // AI analysis: try server-side callable first, fall back to client SDK
+      const aiData = await AiService.analyzeIssueImage({
+        imageUrl: successfulUrls[0],
+        blob: firstBlob, // fallback if callable fails
+        title,
+        description,
+      });
+
+      if (!aiData) {
+        toast.error('AI analysis unavailable — you can fill in details manually.');
+      }
+
+      setDraft((d) => ({
+        ...d,
+        photos: successfulUrls,
+        ...(aiData ? {
+          aiSuggestion: aiData,
+          category: aiData.category,
+          severity: aiData.severity,
+          title: aiData.suggestedTitle,
+          description: aiData.suggestedDescription,
+        } : {}),
+      }));
+    } catch (err) {
+      console.error('AI analysis failed:', err);
+      toast.error('Something went wrong. You can fill in details manually.');
+    } finally {
+      setAiLoading(false);
+    }
+  }, [draft.title, draft.description]);
+
   const next = async () => {
     // Step 2 → 3: move to AI step immediately, run upload + AI in background
     if (step === 2) {
       update({ step: 3 });
 
       if (photoBlobs.current.length > 0 && user && !draft.aiSuggestion) {
-        setAiLoading(true);
         const blobs = photoBlobs.current;
-        const aiBlob = blobs[0]; // Use first photo for AI analysis
-        try {
-          // Upload ALL photos to Firebase Storage in parallel
-          const uploadPromises = blobs.map((blob, idx) => {
-            const uploadPath = `issues/${Date.now()}_${idx}_${Math.random().toString(36).slice(2)}`;
-            return UploadService.uploadFile(
-              new File([blob], `photo_${idx}.jpg`, { type: blob.type || 'image/jpeg' }),
-              uploadPath,
-              ).catch((err: unknown) => {
-                console.error('Photo upload error:', err);
-                return null as string | null;
-              });
-          });
-
-          const aiPromise = AiService.analyzeIssueImage(aiBlob).catch((err: unknown) => {
-            console.error('AI analysis error:', err);
-            return null;
-          });
-
-          const [uploadUrls, aiData] = await Promise.all([
-            Promise.all(uploadPromises),
-            aiPromise,
-          ]);
-
-          const successfulUrls = uploadUrls.filter((u): u is string => u !== null);
-          if (successfulUrls.length === 0) toast.error('Photo upload failed — check storage permissions and try again.');
-          else if (successfulUrls.length < blobs.length) toast.warning(`${blobs.length - successfulUrls.length} photo(s) failed to upload.`);
-          if (!aiData) toast.error('AI analysis unavailable — you can fill in details manually.');
-
-          setDraft((d) => ({
-            ...d,
-            photos: successfulUrls.length > 0 ? successfulUrls : d.photos,
-            ...(aiData ? {
-              aiSuggestion: aiData,
-              category: aiData.category,
-              severity: aiData.severity,
-              title: aiData.suggestedTitle,
-              description: aiData.suggestedDescription,
-            } : {}),
-          }));
-        } catch (err) {
-          console.error('Step 3 background task failed:', err);
-          toast.error('Something went wrong. Fill in details manually.');
-        } finally {
-          setAiLoading(false);
-        }
+        await runAiAnalysis(blobs);
       }
       return;
     }
@@ -570,6 +586,17 @@ export default function ReportWizardPage() {
                         ? 'No photo added — fill in details manually.'
                         : 'AI analysis unavailable — fill in details manually.'}
                     </p>
+                    {draft.photos.length > 0 && photoBlobs.current.length > 0 && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="mt-4"
+                        onClick={() => runAiAnalysis(photoBlobs.current)}
+                      >
+                        <Sparkles className="mr-2 size-4" />
+                        Retry AI Analysis
+                      </Button>
+                    )}
                   </CardContent>
                 </Card>
               )}
