@@ -73,12 +73,7 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
         {...props}
       >
         {asChild ? (
-          <Slottable>
-            {isLoading ? (
-              <Loader2 className="size-4 animate-spin" aria-hidden="true" />
-            ) : null}
-            {children}
-          </Slottable>
+          <Slottable>{children}</Slottable>
         ) : (
           <>
             {isLoading ? (
