@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { Slot } from '@radix-ui/react-slot';
+import { Slot, Slottable } from '@radix-ui/react-slot';
 import { cva, type VariantProps } from 'class-variance-authority';
 import { Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -75,7 +75,7 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
         {isLoading ? (
           <Loader2 className="size-4 animate-spin" aria-hidden="true" />
         ) : null}
-        {children}
+        {asChild ? <Slottable>{children}</Slottable> : children}
       </Comp>
     );
   },
