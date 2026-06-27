@@ -46,9 +46,10 @@ export interface IssueAiAnalysis {
   category: IssueCategory;
   severity: IssueSeverity;
   confidence: number;
-  description: string;
   suggestedTitle: string;
-  safetyConcern: boolean;
+  suggestedDescription: string;
+  suggestedTags: string[];
+  duplicateProbability: number;
 }
 
 export interface IssueVerification {

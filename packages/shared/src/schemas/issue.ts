@@ -23,9 +23,10 @@ export const issueAiAnalysisSchema = z.object({
   category: issueCategorySchema,
   severity: issueSeveritySchema,
   confidence: z.number().min(0).max(1),
-  description: z.string(),
   suggestedTitle: z.string(),
-  safetyConcern: z.boolean(),
+  suggestedDescription: z.string(),
+  suggestedTags: z.array(z.string()),
+  duplicateProbability: z.number().min(0).max(1),
 });
 
 export const issueVerificationSchema = z.object({

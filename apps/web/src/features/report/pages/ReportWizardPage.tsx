@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
@@ -20,10 +20,12 @@ import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Card, CardContent } from '@/components/ui/card';
 import { CATEGORY_OPTIONS, SEVERITY_OPTIONS } from '@/lib/constants';
-import type { IssueCategory, IssueSeverity } from '@blockseblock/shared';
+import type { IssueCategory, IssueSeverity, IssueAiAnalysis } from '@blockseblock/shared';
 import { IssueService } from '@/services/issue.service';
 import { useAuth } from '@/hooks/useAuth';
 import { GeoPoint } from 'firebase/firestore';
+import { UploadService } from '@/services/upload.service';
+import { AiService } from '@/services/ai.service';
 
 const STEPS = [
   { id: 'camera', label: 'Camera', icon: Camera },
@@ -44,13 +46,7 @@ interface ReportDraft {
   description: string;
   category: IssueCategory;
   severity: IssueSeverity;
-  aiSuggestion?: {
-    category: IssueCategory;
-    severity: IssueSeverity;
-    title: string;
-    description: string;
-    confidence: number;
-  };
+  aiSuggestion?: IssueAiAnalysis;
 }
 
 const defaultDraft: ReportDraft = {
@@ -90,28 +86,51 @@ export default function ReportWizardPage() {
     setDraft((d) => ({ ...d, ...patch }));
   }, []);
 
-  const next = () => {
+  const next = async () => {
     if (step === 2 && !draft.aiSuggestion) {
       setAiLoading(true);
-      setTimeout(() => {
-        update({
-          step: step + 1,
-          aiSuggestion: {
-            category: 'pothole',
-            severity: 'high',
-            title: 'Road surface damage detected',
-            description:
-              'AI detected a significant road surface irregularity consistent with pothole damage. Recommended priority: high.',
-            confidence: 0.92,
-          },
-          category: 'pothole',
-          severity: 'high',
-          title: 'Road surface damage detected',
-          description:
-            'Large pothole causing vehicles to swerve. Located near crosswalk with high pedestrian traffic.',
-        });
+      try {
+        if (draft.photos.length > 0) {
+          // Assume the first photo is a local object URL
+          const res = await fetch(draft.photos[0]);
+          const blob = await res.blob();
+          
+          // Convert Blob to Base64 for Gemini
+          const reader = new FileReader();
+          reader.readAsDataURL(blob);
+          const base64Promise = new Promise<string>((resolve) => {
+            reader.onloadend = () => {
+              const base64data = (reader.result as string).split(',')[1];
+              resolve(base64data);
+            };
+          });
+          const base64Image = await base64Promise;
+          
+          // Start both AI analysis and Firebase upload concurrently
+          const path = `reports/${Date.now()}_${Math.random().toString(36).substring(7)}`;
+          const uploadPromise = UploadService.uploadFile(new File([blob], 'photo.jpg', { type: blob.type }), path);
+          const aiPromise = AiService.analyzeIssueImage(base64Image, blob.type);
+          
+          const [downloadUrl, analysis] = await Promise.all([uploadPromise, aiPromise]);
+          
+          update({
+            step: step + 1,
+            photos: [downloadUrl, ...draft.photos.slice(1)], // Update photo with uploaded URL
+            aiSuggestion: analysis,
+            category: analysis.category,
+            severity: analysis.severity,
+            title: analysis.suggestedTitle,
+            description: analysis.suggestedDescription,
+          });
+        } else {
+          update({ step: step + 1 });
+        }
+      } catch (error) {
+        console.error("AI Analysis failed:", error);
+        update({ step: step + 1 }); // Proceed even if AI fails
+      } finally {
         setAiLoading(false);
-      }, 1500);
+      }
       return;
     }
     if (step < STEPS.length - 1) update({ step: step + 1 });
@@ -144,6 +163,7 @@ export default function ReportWizardPage() {
           images: draft.photos,
           videos: [],
         },
+        aiAnalysis: draft.aiSuggestion,
         verification: {
           upvotes: 0,
           downvotes: 0,
@@ -159,13 +179,16 @@ export default function ReportWizardPage() {
     }
   };
 
-  const addMockPhoto = () => {
-    update({
-      photos: [
-        ...draft.photos,
-        'https://images.unsplash.com/photo-1581092160562-40aa08e78837?w=400&q=80',
-      ],
-    });
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      const objectUrl = URL.createObjectURL(file);
+      update({
+        photos: [...draft.photos, objectUrl],
+      });
+    }
   };
 
   return (
@@ -224,8 +247,16 @@ export default function ReportWizardPage() {
                 <p className="mt-1 text-sm text-muted-foreground">
                   Capture the civic issue clearly
                 </p>
-                <Button className="mt-4" onClick={addMockPhoto}>
-                  Open Camera
+                <input 
+                  type="file" 
+                  accept="image/*" 
+                  capture="environment" 
+                  className="hidden" 
+                  ref={fileInputRef} 
+                  onChange={handleFileSelect} 
+                />
+                <Button className="mt-4" onClick={() => fileInputRef.current?.click()}>
+                  Take Photo
                 </Button>
               </div>
               {draft.photos.length > 0 && (
@@ -253,7 +284,7 @@ export default function ReportWizardPage() {
                   <button
                     key={n}
                     type="button"
-                    onClick={addMockPhoto}
+                    onClick={() => fileInputRef.current?.click()}
                     className="glass aspect-square rounded-xl border border-border/50 transition-colors hover:border-primary/50"
                   >
                     <ImagePlus className="mx-auto size-6 text-muted-foreground" />
@@ -320,7 +351,17 @@ export default function ReportWizardPage() {
                         <p className="font-medium capitalize">{draft.aiSuggestion.severity}</p>
                       </div>
                     </div>
-                    <p className="text-sm">{draft.aiSuggestion.description}</p>
+                    <p className="text-sm">{draft.aiSuggestion.suggestedDescription}</p>
+                    {draft.aiSuggestion.suggestedTags && draft.aiSuggestion.suggestedTags.length > 0 && (
+                      <div className="flex flex-wrap gap-1 mt-2">
+                        {draft.aiSuggestion.suggestedTags.map((tag) => (
+                          <Badge key={tag} variant="outline" className="text-[10px]">#{tag}</Badge>
+                        ))}
+                      </div>
+                    )}
+                    <p className="text-xs text-muted-foreground mt-2 border-t pt-2 border-border/50">
+                      Duplicate probability: {Math.round(draft.aiSuggestion.duplicateProbability * 100)}%
+                    </p>
                     <p className="text-xs text-muted-foreground">
                       You can edit these suggestions in the next step.
                     </p>
