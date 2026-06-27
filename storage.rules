@@ -1,30 +1,43 @@
 rules_version = '2';
+
 service firebase.storage {
   match /b/{bucket}/o {
-    
-    function isAuthenticated() { return request.auth != null; }
-    function isOwner(uid) { return isAuthenticated() && request.auth.uid == uid; }
-    
-    function isValidMedia() {
-      return (request.resource.contentType.matches('image/.*') || request.resource.contentType.matches('video/.*'))
-             && request.resource.size < 50 * 1024 * 1024; // 50MB max
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(uid) {
+      return signedIn() && request.auth.uid == uid;
+    }
+
+    function validImage() {
+      return request.resource.contentType.matches('image/.*')
+        && request.resource.size < 10 * 1024 * 1024;
+    }
+
+    function validVideo() {
+      return request.resource.contentType.matches('video/.*')
+        && request.resource.size < 50 * 1024 * 1024;
     }
 
     match /public/{allPaths=**} {
       allow read: if true;
-      allow write: if false; 
+      allow write: if false;
     }
 
-    match /users/{userId} {
-      match /avatars/{imageId} {
-        allow read: if true; 
-        allow write: if isOwner(userId) && request.resource.contentType.matches('image/.*') && request.resource.size < 5 * 1024 * 1024;
-      }
-      
-      match /uploads/{fileId} {
-        allow read: if isAuthenticated(); 
-        allow write: if isOwner(userId) && isValidMedia();
-      }
+    match /users/{userId}/avatars/{fileId} {
+      allow read: if true;
+      allow write: if isOwner(userId) && validImage();
+    }
+
+    match /users/{userId}/uploads/{fileId} {
+      allow read: if signedIn() || isOwner(userId);
+      allow write: if isOwner(userId) && (validImage() || validVideo());
+    }
+
+    match /issues/{issueId}/{fileId=**} {
+      allow read: if true;
+      allow write: if signedIn() && (validImage() || validVideo());
     }
   }
 }

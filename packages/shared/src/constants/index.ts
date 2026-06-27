@@ -9,6 +9,8 @@ export const COLLECTIONS = {
   COMMENTS: 'comments',
   NOTIFICATIONS: 'notifications',
   LEADERBOARD: 'leaderboard',
+  ANALYTICS: 'analytics',
+  BADGES: 'badges',
 } as const;
 
 export const HTTP_STATUS = {
