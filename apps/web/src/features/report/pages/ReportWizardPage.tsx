@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
+import { toast } from 'sonner';
 import {
   Camera,
   ImagePlus,
@@ -90,7 +91,7 @@ export default function ReportWizardPage() {
     if (step === 2 && !draft.aiSuggestion) {
       setAiLoading(true);
       try {
-        if (draft.photos.length > 0) {
+        if (draft.photos.length > 0 && user) {
           // Assume the first photo is a local object URL
           const res = await fetch(draft.photos[0]);
           const blob = await res.blob();
@@ -107,26 +108,45 @@ export default function ReportWizardPage() {
           const base64Image = await base64Promise;
           
           // Start both AI analysis and Firebase upload concurrently
-          const path = `reports/${Date.now()}_${Math.random().toString(36).substring(7)}`;
+          // Use storage path that matches Firestore rules: users/{userId}/uploads/{fileId}
+          const path = `users/${user.uid}/uploads/${Date.now()}_${Math.random().toString(36).substring(7)}`;
           const uploadPromise = UploadService.uploadFile(new File([blob], 'photo.jpg', { type: blob.type }), path);
-          const aiPromise = AiService.analyzeIssueImage(base64Image, blob.type);
+          const aiPromise = AiService.analyzeIssueImage(base64Image, blob.type).catch(() => null);
           
-          const [downloadUrl, analysis] = await Promise.all([uploadPromise, aiPromise]);
+          // Use allSettled so upload failure doesn't discard AI result (or vice versa)
+          const [uploadResult, analysis] = await Promise.all([
+            uploadPromise.catch(() => null as string | null),
+            aiPromise,
+          ]);
+          
+          const downloadUrl = uploadResult;
+          const aiData = analysis;
+          
+          if (!downloadUrl) {
+            toast.error('Photo upload failed. Your report will be submitted without photos.');
+          }
           
           update({
             step: step + 1,
-            photos: [downloadUrl, ...draft.photos.slice(1)], // Update photo with uploaded URL
-            aiSuggestion: analysis,
-            category: analysis.category,
-            severity: analysis.severity,
-            title: analysis.suggestedTitle,
-            description: analysis.suggestedDescription,
+            photos: downloadUrl ? [downloadUrl, ...draft.photos.slice(1)] : draft.photos, // Keep local URL if upload failed
+            ...(aiData ? {
+              aiSuggestion: aiData,
+              category: aiData.category,
+              severity: aiData.severity,
+              title: aiData.suggestedTitle,
+              description: aiData.suggestedDescription,
+            } : {}),
           });
+          
+          if (!aiData) {
+            toast.error('AI analysis failed. You can fill in the details manually.');
+          }
         } else {
           update({ step: step + 1 });
         }
       } catch (error) {
-        console.error("AI Analysis failed:", error);
+        console.error("AI Analysis step failed:", error);
+        toast.error('Something went wrong. Please try again.');
         update({ step: step + 1 }); // Proceed even if AI fails
       } finally {
         setAiLoading(false);
@@ -142,7 +162,10 @@ export default function ReportWizardPage() {
   };
 
   const submit = async () => {
-    if (!user) return; // Need to be logged in
+    if (!user) {
+      toast.error('You must be signed in to submit a report.');
+      return;
+    }
     setSubmitting(true);
     
     try {
@@ -171,9 +194,11 @@ export default function ReportWizardPage() {
         },
       });
       localStorage.removeItem(DRAFT_KEY);
+      toast.success('Report submitted successfully!');
       navigate('/home');
     } catch (err) {
       console.error(err);
+      toast.error('Failed to submit report. Please try again.');
     } finally {
       setSubmitting(false);
     }
