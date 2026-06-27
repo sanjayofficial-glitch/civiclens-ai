@@ -8,19 +8,28 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
 import { H2, Muted } from '@/components/ui/typography';
+import { AuthService } from '@/services/auth.service';
 
 export default function SignupPage() {
   const navigate = useNavigate();
   const [showPassword, setShowPassword] = useState(false);
+  const [name, setName] = useState('');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    setTimeout(() => {
-      setLoading(false);
+    try {
+      await AuthService.signUpWithEmail(email, password, name);
+      await AuthService.sendVerificationEmail();
       navigate('/profile-completion');
-    }, 800);
+    } catch (error) {
+      console.error('Sign-up failed', error);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -47,6 +56,8 @@ export default function SignupPage() {
                 id="name"
                 placeholder="Alex Rivera"
                 className="pl-10"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
                 required
                 autoComplete="name"
               />
@@ -65,6 +76,8 @@ export default function SignupPage() {
                 type="email"
                 placeholder="you@example.com"
                 className="pl-10"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
                 required
                 autoComplete="email"
               />
@@ -83,6 +96,8 @@ export default function SignupPage() {
                 type={showPassword ? 'text' : 'password'}
                 placeholder="Min. 8 characters"
                 className="pl-10 pr-10"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
                 required
                 minLength={8}
                 autoComplete="new-password"

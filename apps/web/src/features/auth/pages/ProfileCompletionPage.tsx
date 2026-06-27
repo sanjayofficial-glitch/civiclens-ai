@@ -8,18 +8,41 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { H2, Muted } from '@/components/ui/typography';
+import { UserService } from '@/services/user.service';
+import { useAuth } from '@/hooks/useAuth';
 
 export default function ProfileCompletionPage() {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [loading, setLoading] = useState(false);
+  const [displayName, setDisplayName] = useState('Alex Rivera');
+  const [phone, setPhone] = useState('');
+  const [location, setLocation] = useState('');
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    setTimeout(() => {
-      setLoading(false);
+    try {
+      if (user) {
+        await UserService.ensureProfile(user.uid, {
+          displayName,
+          phoneNumber: phone || null,
+          email: user.email ?? '',
+          photoURL: user.photoURL ?? null,
+          role: 'citizen',
+          reputation: 0,
+          badges: [],
+          streakDays: 0,
+          fcmTokens: [],
+          locationLabel: location,
+        });
+      }
       navigate('/home');
-    }, 800);
+    } catch (error) {
+      console.error('Profile completion failed', error);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -51,7 +74,8 @@ export default function ProfileCompletionPage() {
                 id="displayName"
                 placeholder="Alex Rivera"
                 className="pl-10"
-                defaultValue="Alex Rivera"
+                value={displayName}
+                onChange={(e) => setDisplayName(e.target.value)}
                 required
               />
             </div>
@@ -69,6 +93,8 @@ export default function ProfileCompletionPage() {
                 type="tel"
                 placeholder="+1 (555) 000-0000"
                 className="pl-10"
+                value={phone}
+                onChange={(e) => setPhone(e.target.value)}
                 autoComplete="tel"
               />
             </div>
@@ -85,6 +111,8 @@ export default function ProfileCompletionPage() {
                 id="location"
                 placeholder="Downtown, Metro City"
                 className="pl-10"
+                value={location}
+                onChange={(e) => setLocation(e.target.value)}
                 required
               />
             </div>

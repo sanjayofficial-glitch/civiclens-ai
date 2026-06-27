@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { H2, Muted } from '@/components/ui/typography';
+import { AuthService } from '@/services/auth.service';
 
 export default function LoginPage() {
   const navigate = useNavigate();
@@ -15,13 +16,17 @@ export default function LoginPage() {
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    setTimeout(() => {
-      setLoading(false);
+    try {
+      await AuthService.signInWithEmail(email, password);
       navigate('/home');
-    }, 800);
+    } catch (error) {
+      console.error('Email sign-in failed', error);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (

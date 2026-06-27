@@ -7,19 +7,24 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { H2, Lead, Muted } from '@/components/ui/typography';
+import { AuthService } from '@/services/auth.service';
 
 export default function ForgotPasswordPage() {
   const [email, setEmail] = useState('');
   const [sent, setSent] = useState(false);
   const [loading, setLoading] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    setTimeout(() => {
-      setLoading(false);
+    try {
+      await AuthService.sendResetEmail(email);
       setSent(true);
-    }, 800);
+    } catch (error) {
+      console.error('Password reset failed', error);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (

@@ -2,9 +2,8 @@ import { useState, useEffect, createContext, useContext } from 'react';
 import { onAuthStateChanged } from 'firebase/auth';
 import type { User } from 'firebase/auth';
 import { auth } from '../lib/firebase/auth';
-import { db } from '../lib/firebase/firestore';
-import { doc, getDoc } from 'firebase/firestore';
 import type { UserRole } from '@blockseblock/shared';
+import { UserService } from '@/services/user.service';
 
 interface AuthContextType {
   user: User | null;
@@ -23,12 +22,20 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
       setUser(currentUser);
       if (currentUser) {
-        const userDoc = await getDoc(doc(db, 'users', currentUser.uid));
-        if (userDoc.exists()) {
-          setRole(userDoc.data().role as UserRole);
-        } else {
-          setRole('citizen');
-        }
+        const profile = {
+          displayName: currentUser.displayName ?? 'Anonymous Citizen',
+          email: currentUser.email ?? '',
+          photoURL: currentUser.photoURL ?? null,
+          phoneNumber: currentUser.phoneNumber ?? null,
+          role: 'citizen' as UserRole,
+          reputation: 0,
+          badges: [],
+          streakDays: 0,
+          fcmTokens: [],
+        };
+
+        await UserService.ensureProfile(currentUser.uid, profile);
+        setRole('citizen');
       } else {
         setRole(null);
       }
