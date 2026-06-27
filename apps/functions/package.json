@@ -23,6 +23,7 @@
     "zod": "^3.24.1"
   },
   "devDependencies": {
+    "fast-check": "^3.22.0",
     "typescript": "^5.0.0",
     "vitest": "^4.1.9"
   },

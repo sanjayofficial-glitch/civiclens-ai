@@ -84,7 +84,7 @@ Six-phase stabilization plan for the hackathon demo. Phase 1 (core bug fixes) is
   - _Requirements: 1.1, 1.2, 1.3, 2.1, 3.1, 5.2_
 
 
-- [-] 2. Write preservation property tests (BEFORE implementing fix)
+- [ ] 2. Write preservation property tests (BEFORE implementing fix)
   - **Property 2: Preservation** - Happy-path AI, existing upload behavior, manual location, passing triggers
   - **IMPORTANT**: Follow observation-first methodology — run unfixed code with non-buggy inputs first
   - Observe: `analyzeIssueImage` with valid key + accessible URL → returns `{ status:'success', analysis:{ category, severity, confidence>=0.6, suggestedTitle, suggestedDescription, suggestedTags } }`
