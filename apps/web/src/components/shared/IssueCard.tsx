@@ -27,7 +27,7 @@ export function IssueCard({
   const category = getCategoryMeta(issue.category);
   const CategoryIcon = category.icon;
   const thumbnail =
-    issue.media.thumbnail ?? issue.media.images[0] ?? undefined;
+    issue.media?.thumbnail ?? issue.media?.images?.[0] ?? undefined;
 
   if (variant === 'horizontal') {
     return (

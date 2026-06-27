@@ -128,7 +128,7 @@ export default function IssueDetailsPage() {
   const severity = getSeverityMeta(issue.severity);
   const category = getCategoryMeta(issue.category);
   const CategoryIcon = category.icon;
-  const images = issue.media?.images || [];
+  const images = issue.media?.images ?? [];
   const isOwner = user?.uid === issue.reporterId;
   const canDelete = isOwner && (issue.status === 'resolved' || issue.status === 'rejected');
 

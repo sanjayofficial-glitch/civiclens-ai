@@ -15,6 +15,8 @@ export const useIssues = (filters?: IssueFilters, pageSize = 10, refreshKey = 0)
     setLoading(true);
     setError(null);
 
+    let innerUnsub: (() => void) | null = null;
+
     const unsub = IssueService.listenToIssues(
       filters,
       pageSize,
@@ -27,7 +29,7 @@ export const useIssues = (filters?: IssueFilters, pageSize = 10, refreshKey = 0)
         // If the indexed query fails (e.g. index not deployed), fall back to a broader query
         // and filter client-side so the UI never shows "failed to load"
         if (filters?.reporterId && err.message?.includes('index')) {
-          IssueService.listenToIssues(
+          innerUnsub = IssueService.listenToIssues(
             {},
             100,
             (allIssues) => {
@@ -47,7 +49,10 @@ export const useIssues = (filters?: IssueFilters, pageSize = 10, refreshKey = 0)
       },
     );
 
-    return () => unsub();
+    return () => {
+      innerUnsub?.();
+      unsub();
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [filtersKey, pageSize, refreshKey]);
 

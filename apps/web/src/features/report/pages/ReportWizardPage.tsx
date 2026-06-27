@@ -102,8 +102,8 @@ export default function ReportWizardPage() {
   const [aiLoading, setAiLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [locating, setLocating] = useState(false);
-  // Store the raw Blob in a ref so we can pass it to AI without re-fetching
-  const photoBlob = useRef<Blob | null>(null);
+  // Store all photo Blobs (camera + gallery) for upload. Index 0 = camera photo.
+  const photoBlobs = useRef<Blob[]>([]);
 
   // Persist draft (exclude localPhoto — blob: URLs don't survive reload)
   useEffect(() => {
@@ -157,26 +157,35 @@ export default function ReportWizardPage() {
     if (step === 2) {
       update({ step: 3 });
 
-      if (photoBlob.current && user && !draft.aiSuggestion) {
+      if (photoBlobs.current.length > 0 && user && !draft.aiSuggestion) {
         setAiLoading(true);
-        const blob = photoBlob.current;
+        const blobs = photoBlobs.current;
+        const aiBlob = blobs[0]; // Use first photo for AI analysis
         try {
-          // Upload to issues/ path — public read, no auth needed to display
-          const uploadPath = `issues/${Date.now()}_${Math.random().toString(36).slice(2)}`;
-          const [uploadUrl, aiData] = await Promise.all([
-            UploadService.uploadFile(
-              new File([blob], 'photo.jpg', { type: blob.type || 'image/jpeg' }),
+          // Upload ALL photos to Firebase Storage in parallel
+          const uploadPromises = blobs.map((blob, idx) => {
+            const uploadPath = `issues/${Date.now()}_${idx}_${Math.random().toString(36).slice(2)}`;
+            return UploadService.uploadFile(
+              new File([blob], `photo_${idx}.jpg`, { type: blob.type || 'image/jpeg' }),
               uploadPath,
-            ).catch(() => null as string | null),
-            AiService.analyzeIssueImage(blob).catch(() => null),
+            ).catch(() => null as string | null);
+          });
+
+          const aiPromise = AiService.analyzeIssueImage(aiBlob).catch(() => null);
+
+          const [uploadUrls, aiData] = await Promise.all([
+            Promise.all(uploadPromises),
+            aiPromise,
           ]);
 
-          if (!uploadUrl) toast.error('Photo upload failed — report will have no image.');
-          if (!aiData)  toast.error('AI analysis failed — fill in details manually.');
+          const successfulUrls = uploadUrls.filter((u): u is string => u !== null);
+          if (successfulUrls.length === 0) toast.error('Photo upload failed — report will have no image.');
+          else if (successfulUrls.length < blobs.length) toast.warning(`${blobs.length - successfulUrls.length} photo(s) failed to upload.`);
+          if (!aiData) toast.error('AI analysis failed — fill in details manually.');
 
           setDraft((d) => ({
             ...d,
-            photos: uploadUrl ? [uploadUrl] : d.photos,
+            photos: successfulUrls.length > 0 ? successfulUrls : d.photos,
             ...(aiData ? {
               aiSuggestion: aiData,
               category: aiData.category,
@@ -208,6 +217,8 @@ export default function ReportWizardPage() {
     setSubmitting(true);
     try {
       const geohash = `${draft.latitude.toFixed(5)},${draft.longitude.toFixed(5)}`;
+      // Filter out any blob: URLs that failed to upload — only persist valid Firebase URLs
+      const validImages = draft.photos.filter((url) => url.startsWith('https://'));
       const docRef = await IssueService.create({
         title: draft.title || 'Untitled Report',
         description: draft.description,
@@ -221,7 +232,7 @@ export default function ReportWizardPage() {
         },
         reporterId: user.uid,
         tags: draft.aiSuggestion?.suggestedTags ?? [],
-        media: { images: draft.photos, videos: [] },
+        media: { images: validImages, videos: [] },
         aiAnalysis: draft.aiSuggestion,
         verification: { upvotes: 0, downvotes: 0, verifiedBy: [] },
       });
@@ -245,7 +256,7 @@ export default function ReportWizardPage() {
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    photoBlob.current = file;
+    photoBlobs.current = [file];
     const objectUrl = URL.createObjectURL(file);
     // Revoke previous local photo
     if (draft.localPhoto) URL.revokeObjectURL(draft.localPhoto);
@@ -256,7 +267,8 @@ export default function ReportWizardPage() {
   const handleGallerySelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files ?? []);
     if (!files.length) return;
-    if (!photoBlob.current && files[0]) photoBlob.current = files[0];
+    // Track gallery blobs alongside the camera blob
+    photoBlobs.current = [...photoBlobs.current, ...files];
     const newUrls = files.map((f) => URL.createObjectURL(f));
     update({ photos: [...draft.photos, ...newUrls] });
     e.target.value = '';
