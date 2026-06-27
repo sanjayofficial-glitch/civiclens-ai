@@ -34,37 +34,54 @@ const analysisSchema: Schema = {
  * Resizes to max 800px on the longest side and encodes as JPEG at 0.75 quality.
  * Typical reduction: 4MB → ~150KB.
  */
-async function compressImage(blob: Blob, maxDim = 800, quality = 0.75): Promise<string> {
+async function blobToBase64(blob: Blob): Promise<string> {
   return new Promise((resolve, reject) => {
-    const img = new Image();
-    const url = URL.createObjectURL(blob);
-
-    img.onload = () => {
-      URL.revokeObjectURL(url);
-      const { width, height } = img;
-      const scale = Math.min(1, maxDim / Math.max(width, height));
-      const w = Math.round(width * scale);
-      const h = Math.round(height * scale);
-
-      const canvas = document.createElement('canvas');
-      canvas.width = w;
-      canvas.height = h;
-      const ctx = canvas.getContext('2d');
-      if (!ctx) { reject(new Error('Canvas not supported')); return; }
-
-      ctx.drawImage(img, 0, 0, w, h);
-      // Always output as JPEG regardless of input format for smaller payload
-      const dataUrl = canvas.toDataURL('image/jpeg', quality);
-      resolve(dataUrl.split(',')[1]); // return base64 part only
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      const result = reader.result as string;
+      const base64 = result.includes(',') ? result.split(',')[1] : result;
+      resolve(base64);
     };
-
-    img.onerror = () => {
-      URL.revokeObjectURL(url);
-      reject(new Error('Failed to load image for compression'));
-    };
-
-    img.src = url;
+    reader.onerror = () => reject(new Error('FileReader failed'));
+    reader.readAsDataURL(blob);
   });
+}
+
+async function compressImage(blob: Blob, maxDim = 800, quality = 0.75): Promise<string> {
+  try {
+    return await new Promise<string>((resolve, reject) => {
+      const img = new Image();
+      const url = URL.createObjectURL(blob);
+
+      img.onload = () => {
+        URL.revokeObjectURL(url);
+        const { width, height } = img;
+        const scale = Math.min(1, maxDim / Math.max(width, height));
+        const w = Math.round(width * scale);
+        const h = Math.round(height * scale);
+
+        const canvas = document.createElement('canvas');
+        canvas.width = w;
+        canvas.height = h;
+        const ctx = canvas.getContext('2d');
+        if (!ctx) { reject(new Error('Canvas not supported')); return; }
+
+        ctx.drawImage(img, 0, 0, w, h);
+        const dataUrl = canvas.toDataURL('image/jpeg', quality);
+        resolve(dataUrl.split(',')[1]);
+      };
+
+      img.onerror = () => {
+        URL.revokeObjectURL(url);
+        reject(new Error('Image load failed'));
+      };
+
+      img.src = url;
+    });
+  } catch {
+    console.warn('Canvas compression failed, using raw base64 fallback');
+    return blobToBase64(blob);
+  }
 }
 
 // Singleton AI client — created once, reused across calls
@@ -89,7 +106,6 @@ export const AiService = {
     const base64 = await compressImage(blob);
 
     const response = await ai.models.generateContent({
-      // gemini-1.5-flash is 2-4× faster than 2.5-flash for structured output
       model: 'gemini-1.5-flash',
       contents: [
         {
@@ -107,12 +123,14 @@ export const AiService = {
       config: {
         responseMimeType: 'application/json',
         responseSchema: analysisSchema,
-        // Lower temperature = faster, more deterministic output
         temperature: 0.1,
       },
     });
 
-    if (!response.text) throw new Error('No response from Gemini.');
-    return JSON.parse(response.text) as IssueAiAnalysis;
+    const text = response.text
+      ?? response.candidates?.[0]?.content?.parts?.[0]?.text
+      ?? '';
+    if (!text) throw new Error('Empty response from Gemini.');
+    return JSON.parse(text) as IssueAiAnalysis;
   },
 };

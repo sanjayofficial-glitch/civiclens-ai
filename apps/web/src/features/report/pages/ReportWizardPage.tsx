@@ -168,10 +168,16 @@ export default function ReportWizardPage() {
             return UploadService.uploadFile(
               new File([blob], `photo_${idx}.jpg`, { type: blob.type || 'image/jpeg' }),
               uploadPath,
-            ).catch(() => null as string | null);
+              ).catch((err: unknown) => {
+                console.error('Photo upload error:', err);
+                return null as string | null;
+              });
           });
 
-          const aiPromise = AiService.analyzeIssueImage(aiBlob).catch(() => null);
+          const aiPromise = AiService.analyzeIssueImage(aiBlob).catch((err: unknown) => {
+            console.error('AI analysis error:', err);
+            return null;
+          });
 
           const [uploadUrls, aiData] = await Promise.all([
             Promise.all(uploadPromises),
@@ -179,9 +185,9 @@ export default function ReportWizardPage() {
           ]);
 
           const successfulUrls = uploadUrls.filter((u): u is string => u !== null);
-          if (successfulUrls.length === 0) toast.error('Photo upload failed — report will have no image.');
+          if (successfulUrls.length === 0) toast.error('Photo upload failed — check storage permissions and try again.');
           else if (successfulUrls.length < blobs.length) toast.warning(`${blobs.length - successfulUrls.length} photo(s) failed to upload.`);
-          if (!aiData) toast.error('AI analysis failed — fill in details manually.');
+          if (!aiData) toast.error('AI analysis unavailable — you can fill in details manually.');
 
           setDraft((d) => ({
             ...d,
@@ -214,6 +220,7 @@ export default function ReportWizardPage() {
 
   const submit = async () => {
     if (!user) { toast.error('Sign in to submit a report.'); return; }
+    if (!draft.title.trim()) { toast.error('Please enter a title for your report.'); return; }
     setSubmitting(true);
     try {
       const geohash = `${draft.latitude.toFixed(5)},${draft.longitude.toFixed(5)}`;
@@ -242,8 +249,15 @@ export default function ReportWizardPage() {
       toast.success('Report submitted!');
       navigate(`/issues/${docRef.id}`);
     } catch (err) {
-      console.error(err);
-      toast.error('Failed to submit. Please try again.');
+      console.error('Report submission error:', err);
+      const msg = err instanceof Error ? err.message : String(err);
+      if (msg.includes('permission') || msg.includes('PERMISSION_DENIED')) {
+        toast.error('Permission denied — are you signed in?');
+      } else if (msg.includes('network') || msg.includes('offline')) {
+        toast.error('Network error — check your connection and try again.');
+      } else {
+        toast.error(`Failed to submit: ${msg.slice(0, 120)}`);
+      }
     } finally {
       setSubmitting(false);
     }
