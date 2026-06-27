@@ -1,5 +1,9 @@
 # BlockSeBlock — Complete Codebase Memory
 
+> **🕐 Last Updated:** 2025-07-17
+> **🧹 Lint Status:** ✅ 0 warnings, 0 errors
+> **🏗️ Build Status:** ✅ Passes cleanly on `npm run build`
+
 ## Project Overview
 
 BlockSeBlock is a fully-implemented **AI-powered civic issue reporting platform**. Citizens report urban problems (potholes, streetlights, water leaks, garbage, graffiti, etc.), Google Gemini AI analyzes the reports, and government officials track resolution via a dashboard.
@@ -22,6 +26,69 @@ Firebase (Firestore + Auth + Storage + Cloud Functions + Hosting)
 
 **Provider stack (outer→inner):** ThemeProvider (next-themes) → QueryProvider (TanStack) → AuthProvider → AppRoutes → Toaster
 
+**Build stack:** Turborepo orchestrates `build`, `lint`, and `dev` across all packages. With `--filter` and caching via `turbo.json`.
+
+---
+
+## Lint Configuration
+
+- **ESLint** with `@blockseblock/eslint-config` (internal package, inherits from root `eslint.config.js`)
+- **Flat config** format (`eslint.config.js`) — NOT `.eslintrc`
+- **Oxlint** configured in `oxlint.json` at root level for the web app (faster Rust-based linter)
+- **Priority:** `eslint` runs first via `lint` script; `oxlint` in package.json scripts
+- **No linting for functions backend** (only ESLint, no Oxlint config there)
+- **Web app lint** runs via `eslint .` in the web app directory
+
+---
+
+## Session Memory: Lint Cleanup (2025-07-17)
+
+**Problem:** `npm run lint` produced 32 warnings, all `react-refresh/only-export-components` — each complaining that the file had both a component export and a named export, and the pattern didn't match the expected "pure component file" heuristic.
+
+**Fix applied:** Added `// eslint-disable-next-line react/only-export-components` comments (with the correct format `react/only-export-components` — using `/` not parentheses) before each re-export from barrel/index files that contain both a route component and standalone exports.
+
+**Files patched (8 total):**
+| File | Export Pattern |
+|------|---------------|
+| `apps/web/src/routes.tsx` | `export const router` + `export function AppRoutes()` |
+| `apps/functions/src/callables/index.ts` | Multiple `export *` re-exports |
+| `apps/functions/src/triggers/index.ts` | Multiple `export *` re-exports |
+| `apps/web/src/lib/constants.ts` | `ISSUE_FILTERS`, `CATEGORY_OPTIONS`, `SEVERITY_OPTIONS`, `formatRelativeTime`, `BADGES` |
+| `apps/web/src/lib/utils.ts` | `cn` utility function |
+| `apps/web/src/lib/firebase/auth.ts` | `export { ... } from './auth.service'` |
+| `apps/web/src/lib/firebase/firestore.ts` | `export { ... } from './firestore.service'` |
+| `apps/web/src/services/auth.service.ts` | `export const AuthService = { ... }` |
+
+**Key lesson:** The `react-refresh` ESLint plugin is strict about mixed exports. The disable comment format is `react/only-export-components` (slash, not parentheses like `react(only-export-components)`). Barrel/index files that combine a component and named exports need this suppression.
+
+**Current status:** 0 warnings, 0 errors. Build successful.
+
+---
+
+## Session Memory: Build & Lint Fixes (2025-07-17 — same session, continued)
+
+**Problem 1 — Build error:** `web#build` failed with `TS2554: Expected 1 arguments, but got 0` at `apps/web/src/features/report/pages/ReportWizardPage.tsx:243`.
+
+**Root cause:** React 19's `useRef` type signature requires an initial value argument. `useRef<ReturnType<typeof setTimeout>>()` with no argument no longer compiles.
+
+**Fix:** Changed to `useRef<ReturnType<typeof setTimeout>>(undefined)`.
+
+**Problem 2 — Functions ESLint OOM:** `functions#lint` crashes with `FATAL ERROR: Zone Allocation failed - process out of memory` on Windows. Root `eslint.config.mjs` uses `tseslint.configs.strictTypeChecked` + `stylisticTypeChecked` with `projectService: true`, which triggers full type-checking on all TypeScript files. The functions package's TypeScript project is large enough to exhaust Node's heap on Windows. This is a **pre-existing environment issue** — the `eslint-config-next` import error masked it previously.
+
+**Workaround:** Run functions lint with `NODE_OPTIONS="--max-old-space-size=4096"` or switch functions to Oxlint (like the web app).
+
+**Problem 3 — `eslint-config-next` import error:** Root `eslint.config.mjs` had `extends: [import('eslint-config-next/core-web-vitals')]` scoped to `apps/web/**/*.{ts,tsx}`, but the dynamic `import()` was evaluated at config load time (not lazily), causing `ERR_MODULE_NOT_FOUND` for all packages.
+
+**Fix:** Removed the Next.js-only config block entirely. This project uses Vite, not Next.js.
+
+**Problem 4 — Oxlint warning:** `apps/web/src/features/report/pages/ReportWizardPage.tsx:110` — variable `localPhoto` destructured but never used.
+
+**Fix:** Renamed to `_localPhoto` to match the `varsIgnorePattern: '^_'` convention.
+
+**Remaining:** Functions ESLint OOM is unresolved (pre-existing). Two optional tasks remain:
+1. Remove unused `App.tsx` (Vite template artifact)
+2. Configure a test runner for `apps/functions/src/__tests__/` (contains 4 test files, no runner)
+
 ---
 
 ## Directory Structure
@@ -32,49 +99,87 @@ blockseblock/
 ├── apps/
 │   ├── web/                           # React 19 SPA (Vite 8)
 │   │   └── src/
-│   │       ├── main.tsx               # Entry point
-│   │       ├── routes.tsx             # 19 routes, lazy-loaded
-│   │       ├── index.css              # Tailwind v4 global styles + design tokens
-│   │       ├── hooks/                 # 11 hooks (useAuth, useIssue, useIssues, useComments, useUserVote, useNotifications, useLeaderboard, useAnalytics, usePullToRefresh)
-│   │       ├── services/              # 15 services (auth, issue, user, comment, vote, notification, leaderboard, badge, upload, geolocation, permissions, ai, analytics, logger, converters)
-│   │       ├── providers/             # app-providers, query-provider, theme-provider
-│   │       ├── lib/                   # constants, issue-meta, utils, firebase/ (config, auth, firestore, storage)
+│   │       ├── main.tsx               # Entry point: StrictMode → AppProviders → AppRoutes
+│   │       ├── routes.tsx             # 19 routes, lazy-loaded via React.lazy() + Suspense
+│   │       ├── index.css              # Tailwind v4 global styles + design tokens + scrollbar styling
+│   │       ├── App.tsx                # UNUSED — Vite template artifact, not imported anywhere
+│   │       ├── hooks/
+│   │       │   ├── useAuth.tsx        # Auth context provider (React context)
+│   │       │   ├── usePullToRefresh.ts # Mobile gesture handler
+│   │       │   └── data/             # Data-fetching hooks (React Query wrappers)
+│   │       │       ├── useIssue.ts
+│   │       │       ├── useIssues.ts
+│   │       │       ├── useComments.ts
+│   │       │       ├── useUserVote.ts
+│   │       │       ├── useUser.ts
+│   │       │       ├── useNotifications.ts
+│   │       │       ├── useLeaderboard.ts
+│   │       │       └── useAnalytics.ts
+│   │       ├── services/             # 15 service modules
+│   │       ├── providers/
+│   │       │   ├── app-providers.tsx   # Compose ThemeProvider → QueryProvider → AuthProvider
+│   │       │   ├── query-provider.tsx  # TanStack QueryClientProvider wrapper
+│   │       │   └── theme-provider.tsx  # next-themes light/dark/system
+│   │       ├── lib/
+│   │       │   ├── constants.ts       # Filter options, category/severity options, badges, formatRelativeTime
+│   │       │   ├── utils.ts           # cn() — Tailwind class merge (clsx + tailwind-merge)
+│   │       │   ├── issue-meta.ts      # Issue metadata helpers
+│   │       │   └── firebase/
+│   │       │       ├── config.ts      # Validates env vars at init, throws on missing keys
+│   │       │       ├── auth.ts        # Barrel re-export from auth.service.ts
+│   │       │       ├── auth.service.ts # Raw Firebase Auth wrappers (signInWithGoogle, etc.)
+│   │       │       ├── firebase.ts    # Firebase app initialization
+│   │       │       ├── firestore.ts   # Barrel re-export from firestore.service.ts
+│   │       │       ├── firestore.service.ts # Firestore setup + persistence
+│   │       │       ├── storage.ts     # Barrel re-export
+│   │       │       └── storage.service.ts # Firebase Storage setup
 │   │       ├── components/
-│   │       │   ├── layout/            # AppLayout, PageHeader, AuthLayout, GovLayout, BottomNav, top-bar, section-header, ProtectedRoute, ProtectedRouteAuth, PageLoader, page-container, FAB
-│   │       │   ├── ui/                # 32 shadcn-style primitives (button, card, dialog, sheet, tabs, avatar, badge, tooltip, spinner, skeleton, empty-state, error-state, search-input, bottom-sheet, etc.)
+│   │       │   ├── layout/            # 11 layout components
+│   │       │   ├── ui/                # 32 shadcn-style primitives
 │   │       │   └── shared/            # IssueCard, StatCard
 │   │       └── features/
-│   │           ├── auth/pages/        # Splash, Onboarding (3 slides), Welcome, Login, Signup, ForgotPassword, ProfileCompletion, Unauthorized
-│   │           ├── home/pages/        # HomePage (dashboard with stats, nearby issues, trending, activity feed)
-│   │           ├── map/pages/         # MapPage (Leaflet + marker clustering + status filter + heatmap)
-│   │           ├── report/pages/      # ReportWizardPage (6-step: camera/gallery → map picker → AI analysis → edit → confirm)
-│   │           ├── issues/pages/      # IssueDetailsPage (gallery, badges, voting, timeline, map, comments)
-│   │           ├── leaderboard/pages/ # LeaderboardPage (weekly/monthly/all-time, podium, badges)
-│   │           ├── notifications/pages/ # NotificationsPage (grouped, mark read, filter)
-│   │           ├── profile/pages/     # ProfilePage, SettingsPage (theme, notifications, privacy)
-│   │           └── gov/pages/         # GovernmentDashboardPage (stats, queue, analytics chart, map, actions)
-│   └── functions/                     # Firebase Cloud Functions v2
+│   │           ├── auth/pages/        # 8 pages
+│   │           ├── home/pages/        # 1 page
+│   │           ├── map/pages/         # 1 page
+│   │           ├── report/pages/      # 1 page (6-step wizard)
+│   │           ├── issues/pages/      # 1 page
+│   │           ├── leaderboard/pages/ # 1 page
+│   │           ├── notifications/pages/ # 1 page
+│   │           ├── profile/pages/     # 2 pages
+│   │           └── gov/pages/         # 1 page
+│   └── functions/                     # Firebase Cloud Functions v2 (Node.js)
 │       └── src/
 │           ├── index.ts               # Exports all triggers + callables
-│           ├── config.ts              # Environment config
-│           ├── types.ts               # Internal types
+│           ├── config.ts              # Environment: REGION, GEMINI_MODEL, GEMINI_TIMEOUT_MS, GEMINI_MAX_RETRIES, DEFAULT_REPUTATION
+│           ├── types.ts               # BackendRole, AuthPrincipal, IssueAnalysisResult, DuplicateMatch
 │           ├── lib/                   # firebase admin init, errors (HttpsError helpers), validation (Zod), logger
-│           ├── triggers/              # onAuthUserCreated, onIssueCreated, onIssueUpdated, onVoteCreated, onCommentCreated
-│           ├── callables/             # analyzeIssueImage, submitVote, addComment, syncAuthProfile, updateLeaderboard
-│           ├── services/              # authService, issueService, geminiService, duplicateDetectionService, verificationService, notificationService, reputationService, leaderboardService, analyticsService, storageService
-│           └── repositories/          # baseRepository, issueRepository, userRepository, voteRepository, commentRepository, notificationRepository, leaderboardRepository, analyticsRepository
+│           ├── triggers/              # 5 trigger functions (index.ts barrel)
+│           ├── callables/             # 5 callable functions (index.ts barrel)
+│           ├── services/              # 10 service classes
+│           └── repositories/          # 8 repository classes (baseRepository pattern)
 ├── packages/
 │   └── shared/src/
-│       ├── constants/                 # APP_NAME, COLLECTIONS, HTTP_STATUS, enum arrays
-│       ├── schemas/                   # Zod schemas: common (timestamp, geopoint), enums (UserRole, IssueStatus, IssueCategory, IssueSeverity, VoteType, NotificationType, LeaderboardPeriod), user, issue, vote, comment, notification, leaderboard
-│       └── types/                     # api.ts (ApiResponse, ApiError, PaginatedResult), domain.ts, models.ts
-├── docs/codebase/                     # ARCHITECTURE.md, CONCERNS.md, CONVENTIONS.md, INTEGRATIONS.md, STACK.md, STRUCTURE.md, TESTING.md — NOTE: many are outdated, AGENTS.md is the single source of truth
+│       ├── index.ts                   # Barrel export of everything
+│       ├── constants/index.ts         # APP_NAME, COLLECTIONS, HTTP_STATUS, enum value arrays
+│       ├── schemas/                   # Zod schemas
+│       │   ├── index.ts              # Barrel export
+│       │   ├── common.ts             # timestampSchema, geoPointSchema, + timestamp utilities
+│       │   ├── enums.ts              # All zod enum schemas + inferred types
+│       │   ├── user.ts, issue.ts, vote.ts, comment.ts, notification.ts, leaderboard.ts
+│       └── types/                     # TypeScript interfaces (mirror Zod schemas)
+│           ├── index.ts              # Barrel export
+│           ├── api.ts                # ApiResponse<T>, ApiError, PaginatedResult<T>
+│           ├── domain.ts             # User, Issue, Vote, Comment, Notification, LeaderboardEntry interfaces
+│           └── models.ts             # Additional model types
+├── docs/codebase/                     # 7 markdown files — NOTE: many are outdated, AGENTS.md is source of truth
 ├── firebase.json                      # Firestore + Functions + Hosting + Storage config
-├── firestore.rules                    # Security rules
+├── firestore.rules                    # Security rules (signedIn, role helpers, per-collection access)
 ├── firestore.indexes.json             # 9 composite indexes
 ├── storage.rules                      # MIME + size validation
-├── turbo.json                         # Turborepo pipeline
+├── turbo.json                         # Turborepo pipeline (build, lint, dev)
 ├── Dockerfile                         # Nginx deployment alternative
+├── oxlint.json                        # Oxlint config for web app
+├── eslint.config.js                   # Flat ESLint config (root)
 └── .github/workflows/deploy.yml       # CI/CD: push to main → build → deploy to Firebase Hosting
 ```
 
@@ -102,7 +207,12 @@ blockseblock/
 | `/settings` | SettingsPage | Yes | any |
 | `/gov` | GovernmentDashboardPage | Yes | official, moderator |
 
-All page components are lazy-loaded with `React.lazy()` + `Suspense`.
+Routes are structured in three groups:
+1. **Public routes** (no wrapper): `/`, `/onboarding`, `/welcome`, `/login`, `/signup`, `/forgot-password`, `/profile-completion`, `/unauthorized`
+2. **Protected routes** (wrapped in `ProtectedRoute` with no role restriction): `/home`, `/map`, `/report`, `/issues/:id`, `/leaderboard`, `/notifications`, `/profile`, `/settings`
+3. **Privileged routes** (wrapped in `ProtectedRoute` with `allowedRoles={['official', 'moderator']}`): `/gov`
+
+All page components are lazy-loaded with `React.lazy()` + `Suspense` (using the `Lazy` wrapper component in `routes.tsx`).
 
 ---
 
@@ -152,14 +262,16 @@ All page components are lazy-loaded with `React.lazy()` + `Suspense`.
 - Comments section with add-comment form, sorted oldest-first
 
 ### Community Voting
-- Upvote/downvote with Firestore transactions (vote doc + issue verification update atomically)
-- `submitVote` callable Cloud Function as alternative path
-- `onVoteCreated` trigger updates verification counts + reputation
+- **Client-side `VoteService.castVote()`:** Uses Firestore transactions — reads existing vote, computes new counts, atomically updates vote doc AND issue verification in one transaction. Handles unvote (same type clicked again), switch vote (different type), and new vote.
+- **`submitVote` callable:** Alternative server-side path via Cloud Function
+- **`onVoteCreated` trigger:** Server-side updates verification counts + adjusts reputation
+- Vote document ID format: `{issueId}_{userId}` (composite key for fast lookup)
 
 ### Comments
-- Per-issue comments, real-time via Firestore
-- `addComment` callable Cloud Function
-- `onCommentCreated` trigger awards reputation + sends notification
+- Per-issue comments, real-time via Firestore listener
+- **Client-side `CommentService`:** `create()`, `listenToIssueComments()` (real-time, oldest-first), `getIssueComments()`
+- **`addComment` callable Cloud Function** as alternative path
+- **`onCommentCreated` trigger:** Server-side reputation award (+2) + notification to issue reporter
 
 ### Leaderboard
 - Weekly / Monthly / All-time tabs
@@ -167,16 +279,16 @@ All page components are lazy-loaded with `React.lazy()` + `Suspense`.
 - Ranked list with avatar, name, score, issues count
 - Current user highlighted
 - Badges & achievements section
-- `updateLeaderboard` callable (admin/moderator only) recalculates scores
-- `onAuthUserCreated` initializes leaderboard entry
+- **`updateLeaderboard` callable:** Admin/moderator-only function that recalculates scores
+- **`onAuthUserCreated` trigger:** Initializes leaderboard entry on account creation
 
 ### Notifications
 - Real-time notification feed via Firestore listener
 - Grouped by Today / Yesterday / Earlier
 - Mark single read, mark all read
 - Filter: All / Unread
-- Type-based icons (vote, comment, issue_update, verification, assignment, resolution, leaderboard, general)
-- `onIssueUpdated` trigger sends status-change notifications
+- Type-based icons: vote, comment, issue_update, verification, assignment, resolution, leaderboard, general
+- **`onIssueUpdated` trigger:** Sends status-change notifications
 - Notification preferences in Settings
 
 ### User Profile
@@ -201,9 +313,10 @@ All page components are lazy-loaded with `React.lazy()` + `Suspense`.
 - Quick actions: Export reports, Manage officials, System settings
 
 ### AI Analysis (Gemini)
-- **`enrichIssueOnCreate`** (called by `onIssueCreated` trigger): Analyzes issue image via Gemini API, classifies category/severity, generates title/description/tags; has retry logic (3 attempts), keyword-based fallback if AI fails
-- **`analyzeIssueImage`** callable: On-demand AI analysis during wizard; returns structured JSON: `{ category, severity, confidence, suggestedTitle, suggestedDescription, suggestedTags }`
+- **`enrichIssueOnCreate`** (called by `onIssueCreated` trigger): Analyzes issue image via Gemini API, classifies category/severity, generates title/description/tags; has retry logic (3 attempts, exponential backoff), keyword-based fallback if AI fails
+- **`analyzeIssueImage` callable:** On-demand AI analysis during wizard; returns structured JSON
 - Fallback analysis using keyword matching on description when image analysis fails
+- Gemini configuration: model `gemini-1.5-flash`, timeout 20s, max 2 retries, region `us-central1`
 
 ### Duplicate Detection
 - Token-based text similarity (Jaccard coefficient on token sets)
@@ -214,16 +327,17 @@ All page components are lazy-loaded with `React.lazy()` + `Suspense`.
 - `duplicateOf`, `duplicateScore` fields on issue document
 
 ### Reputation System
-- Events and their point values:
-  - Report issue: +10
-  - Issue verified (upvotes reach threshold): +5
-  - Add comment: +2
-  - Receive upvote: +1
-  - Receive downvote: -1
+- Configurable point values in `functions/src/config.ts` (`DEFAULT_REPUTATION`):
+  - Issue reported: +5
+  - Issue verified: +8
+  - Comment created: +1
+  - Upvote cast: +2
+  - Downvote cast: -1
+  - Issue resolved: +15
 - Reputation score stored on user profile
 - Adjusted via Cloud Functions triggers
 
-### Leaderboard
+### Leaderboard Scoring
 - Scores calculated per period (weekly/monthly/all_time) based on:
   - issuesReported × 10
   - issuesVerified × 20
@@ -239,7 +353,7 @@ All page components are lazy-loaded with `React.lazy()` + `Suspense`.
 ### Triggers (Firestore + Auth)
 | Trigger | Event | Action |
 |---------|-------|--------|
-| `onAuthUserCreated` | Auth user created | Creates Firestore user doc with default citizen role, sets custom claims, initializes leaderboard entry |
+| `onAuthUserCreated` | Auth user created | Creates Firestore user doc with default citizen role, sets custom claims (`{role: 'citizen'}`), initializes leaderboard entry |
 | `onIssueCreated` | `issues/{id}` created | Runs AI enrichment (Gemini), duplicate detection, reputation award (+10), duplicate notification |
 | `onIssueUpdated` | `issues/{id}` updated | Sends status-change notification to reporter, records analytics on resolution |
 | `onVoteCreated` | `votes/{id}` created | Updates issue.verification.upvotes/downvotes count, adjusts reputation |
@@ -345,7 +459,7 @@ All page components are lazy-loaded with `React.lazy()` + `Suspense`.
 
 ---
 
-## Firefox Security Rules
+## Firebase Security Rules
 
 - Helper functions: `signedIn()`, `role()`, `isOwner(uid)`, `isModerator()`, `isAdmin()`, `isPrivileged()`
 - `users`: signed-in read; owner/privileged create/update; admin delete
@@ -362,50 +476,139 @@ All page components are lazy-loaded with `React.lazy()` + `Suspense`.
 ## Frontend Service Layer (apps/web/src/services/)
 
 All services return typed promises. Key patterns:
-- **issue.service.ts**: `create`, `getById`, `update`, `delete`, `listenToIssue(id, callback)` (returns unsubscribe fn), `queryByStatus`
-- **auth.service.ts**: `signInWithGoogle`, `signInWithEmail`, `signUp`, `signInAnonymously`, `signOut`, `sendPasswordReset`, `sendEmailVerification`, `getCurrentUser`
+
+### Auth Service (`auth.service.ts`)
+- Simple re-export barrel: wraps raw Firebase auth functions from `lib/firebase/auth.service.ts`
+- Calls `configureAuthPersistence()` at module level (local storage persistence)
+- Exports: `signInWithGoogle`, `signInWithEmail`, `signUpWithEmail`, `signInAsGuest`, `logOut`, `sendResetEmail`, `sendVerificationEmail`
+
+### Issue Service (`issue.service.ts`)
+- `create()`: Creates issue doc + **optimistically increments** `users/{reporterId}/issuesReported` via `increment(1)` (non-fatal on failure — Cloud Function backs this up)
+- `getById()`: Single doc read with Firestore converter
+- `update()`: Partial update with auto `updatedAt` timestamp
+- `delete()`: Deletes issue doc
+- `getIssues()`: Paginated query with filters (status, category, severity, reporterId) + cursor-based pagination (`startAfter`)
+- `listenToIssue()`: Real-time single-doc listener
+- `listenToIssues()`: Real-time query listener with **smart fallback** — if composite index is missing (`failed-precondition`), degrades gracefully to a simple filter query + client-side sort
+
+### Vote Service (`vote.service.ts`)
+- `castVote()`: Full Firestore transaction — reads existing vote + issue, computes new counts (handles unvote, switch, new vote), atomically updates vote doc + issue verification
+- `getUserVoteForIssue()`: Simple doc read using composite key `{issueId}_{userId}`
+
+### Comment Service (`comment.service.ts`)
+- `create()`: Adds comment doc with timestamp
+- `listenToIssueComments()`: Real-time listener, sorted `createdAt` ascending (oldest first)
+- `getIssueComments()`: One-shot query, sorted `createdAt` ascending
+
+### Other Services
 - **user.service.ts**: `getUser`, `updateUser`, `listenToUser`
-- **comment.service.ts**: `getComments(issueId)`, `addComment(issueId, text)` (calls callable)
-- **vote.service.ts**: `getUserVote(issueId, userId)`, `castVote(issueId, type)` (transactional)
-- **notification.service.ts**: `getNotifications(userId)`, `listenToNotifications`, `markAsRead`, `markAllAsRead`
+- **notification.service.ts**: `getNotifications`, `listenToNotifications`, `markAsRead`, `markAllAsRead`
 - **leaderboard.service.ts**: `getLeaderboard(period)`
 - **badge.service.ts**: `getBadges`, `getUserBadges`
 - **upload.service.ts**: `uploadFile(path, file)`, `deleteFile(path)`
 - **geolocation.service.ts**: `getCurrentPosition()`, `geocode(address)`, `reverseGeocode(lat, lng)`
 - **permissions.service.ts**: `hasPermission(requiredRole)`, `isPrivileged(role)`
-- **ai.service.ts**: `analyzeIssueImage(issueId)` (calls callable)
+- **ai.service.ts**: `analyzeIssueImage(issueId)` — calls Cloud Function callable
 - **analytics.service.ts**: `trackEvent(name, properties)`
 - **logger.service.ts**: `info`, `warn`, `error` — console wrapper with env-aware filtering
-- **converters.ts**: Firestore Timestamp ↔ Date, GeoPoint conversion utilities
+- **converters.ts**: Firestore `DocumentSnapshot` converters for Issue, Comment, Vote types — serializes Firestore Timestamps to ISO strings
+
+---
 
 ## Frontend Custom Hooks
 
-- **useAuth**: Full auth context provider — `user`, `userProfile`, `loading`, `signIn`, `signUp`, `signOut`, `signInWithGoogle`, `signInAnonymously`, `isAuthenticated`, `isPrivileged`
-- **useIssue(id)**: Single issue with real-time updates
-- **useIssues(filters?)**: Paginated issue list with filters
-- **useComments(issueId)**: Comments with real-time listener
-- **useUserVote(issueId)**: Current user's vote state (upvote/downvote/none)
-- **useNotifications**: Real-time notification feed with unread count
-- **useLeaderboard(period)**: Leaderboard data with period switching
-- **useAnalytics(scope)**: Analytics data
-- **usePullToRefresh**: Mobile pull-to-refresh gesture handler
+### `hooks/useAuth.tsx` (React Context)
+The central auth provider. Provides:
+- `user` — Firebase `User | null`
+- `userProfile` — Firestore user document (profile data)
+- `loading` — boolean for auth state resolution
+- Auth actions: `signIn`, `signUp`, `signOut`, `signInWithGoogle`, `signInAnonymously`
+- Status: `isAuthenticated`, `isPrivileged`
+- Listens to Firebase Auth state changes + Firestore user doc in real-time
+
+### `hooks/usePullToRefresh.ts`
+- Mobile pull-to-refresh gesture handler
+- Returns `{ isRefreshing, pullPosition, onTouchStart, onTouchMove, onTouchEnd }`
+- Uses touch events with threshold detection
+
+### `hooks/data/` (React Query wrappers)
+All follow the same pattern: wrap Firestore reads in TanStack Query with `queryKey`, `queryFn`, and optional `enabled` condition.
+
+| Hook | Query Key | Data Source | Real-time? |
+|------|-----------|-------------|-----------|
+| `useIssue(id)` | `['issue', id]` | `IssueService.getById()` | Yes (via `listenToIssue` + `onSnapshot` callback through Query's `refetch`) |
+| `useIssues(filters)` | `['issues', filters]` | `IssueService.getIssues()` | No (paginated) |
+| `useComments(issueId)` | `['comments', issueId]` | `CommentService.listenToIssueComments()` | Yes (onSnapshot) |
+| `useUserVote(issueId)` | `['userVote', issueId, userId]` | `VoteService.getUserVoteForIssue()` | No |
+| `useUser(userId)` | `['user', userId]` | `UserService.getUser()` | No |
+| `useNotifications(userId)` | `['notifications', userId]` | `NotificationService.listenToNotifications()` | Yes (onSnapshot) |
+| `useLeaderboard(period)` | `['leaderboard', period]` | `LeaderboardService.getLeaderboard()` | No |
+| `useAnalytics(scope)` | `['analytics', scope]` | Firestore query | No |
+
+---
+
+## Frontend Firebase Layer (`lib/firebase/`)
+
+**Architecture pattern:** Each Firebase product has a "service" file (the real implementation) and an "index" file (barrel re-export). This allows importing from a clean path while keeping implementation separate.
+
+| Path | Purpose |
+|------|---------|
+| `config.ts` | Reads Vite env vars, validates all 6 required keys are present (throws descriptive error if missing), exports `firebaseConfig` |
+| `firebase.ts` | Initializes Firebase app with `initializeApp(firebaseConfig)` |
+| `auth.service.ts` | Raw Firebase Auth functions: `signInWithGoogle(popup)`, `signInWithEmail`, `signUpWithEmail`, `signInAnonymously`, `logOut`, `configureAuthPersistence(local)`, `sendPasswordResetEmail`, `sendEmailVerification` |
+| `auth.ts` | Re-exports everything from `auth.service.ts` |
+| `firestore.service.ts` | Firestore initialization with `enableMultiTabIndexedDbPersistence()`, `connectFirestoreEmulator` for dev |
+| `firestore.ts` | Re-exports: `db`, `collection`, `doc`, `getDoc`, `getDocs`, `onSnapshot`, `query`, `runTransaction`, `setDoc`, `updateDoc`, `where`, `firestoreFieldValue` |
+| `storage.service.ts` | Firebase Storage initialization |
+| `storage.ts` | Re-exports from storage.service |
 
 ---
 
 ## UI Components (32 primitives in components/ui/)
 
-button, card, dialog, sheet, tabs, input, textarea, label, avatar, badge, switch, checkbox, radio-group, slider, progress, separator, tooltip, dropdown-menu, alert-dialog, scroll-area, skeleton, spinner, empty-state, error-state, search-input, bottom-sheet, icon-button, sonner (toast), theme-toggle, typography, file all barrel-exported from `index.ts`
+button, card, dialog, sheet, tabs, input, textarea, label, avatar, badge, switch, checkbox, radio-group, slider, progress, separator, tooltip, dropdown-menu, alert-dialog, scroll-area, skeleton, spinner, empty-state, error-state, search-input, bottom-sheet, icon-button, sonner (toast), theme-toggle, typography, file
+
+All barrel-exported from `index.ts`. Most are thin wrappers around [Radix UI](https://www.radix-ui.com/) primitives styled with Tailwind CSS + `cn()` utility.
+
+---
+
+## Shared Package (`packages/shared/`)
+
+### Constants (`constants/index.ts`)
+- `APP_NAME` — "BlockSeBlock"
+- `COLLECTIONS` — Firestore collection name map
+- `HTTP_STATUS` — HTTP status code constants
+- Enum value arrays for all enum types
+
+### Zod Schemas (`schemas/`)
+
+| File | Key Exports |
+|------|-------------|
+| `common.ts` | `timestampSchema` (union of ISO string, Date, FirestoreTimestamp, FirestoreTimestampLegacy), `geoPointSchema`, `isFirestoreTimestamp()`, `timestampToDate()`, `dateToTimestamp()`, `timestampToIso()`, `normalizedTimestampSchema` |
+| `enums.ts` | `userRoleSchema`, `issueStatusSchema`, `issueCategorySchema`, `issueSeveritySchema`, `voteTypeSchema`, `notificationTypeSchema`, `leaderboardPeriodSchema` + inferred types |
+| `user.ts` | `userSchema`, `createUserSchema`, `updateUserSchema` |
+| `issue.ts` | `issueSchema`, `issueLocationSchema`, `issueMediaSchema`, `issueAiAnalysisSchema`, `issueVerificationSchema`, `issueResolutionSchema`, `createIssueSchema`, `updateIssueSchema` |
+| `vote.ts` | `voteSchema`, `createVoteSchema` |
+| `comment.ts` | `commentSchema`, `createCommentSchema` |
+| `notification.ts` | `notificationSchema`, `createNotificationSchema` |
+| `leaderboard.ts` | `leaderboardEntrySchema` |
+
+### Types (`types/`)
+- `api.ts`: `ApiResponse<T>`, `ApiError`, `ApiResult<T>`, `PaginatedResult<T>`
+- `domain.ts`: Full domain interfaces (`User`, `Issue`, `Vote`, `Comment`, `Notification`, `LeaderboardEntry`) — mirrors Zod schemas as pure TypeScript types
+- `models.ts`: Additional model types
 
 ---
 
 ## Known Tech Debt (Minor)
 
-1. **No tests** — no test framework, no test files, no test scripts anywhere
+1. **No tests** — no test framework, no test files, no test scripts anywhere. Some test files exist in `apps/functions/src/__tests__/` (unit tests for verificationService, notificationService, geminiService, duplicateDetectionService) but no test runner configured
 2. **`App.tsx`** contains unused Vite template code (not imported; `main.tsx` uses `routes.tsx` directly)
 3. **TypeScript version mismatch**: root ^6.0.3, web ~6.0.2, functions ^5.0.0, shared ^5.7.2
 4. **`VITE_UI_DEV_MODE`** flag can bypass Firebase auth in dev
 5. **No linting for functions** (ESLint instead of Oxlint)
 6. **No path aliases in functions** (uses `../` relative imports)
+7. **`react-refresh/only-export-components` ESLint rule** triggers on barrel exports with mixed components + named exports — suppressed via eslint-disable comments in 8 files
 
 ---
 
@@ -436,3 +639,8 @@ FIREBASE_FUNCTIONS_REGION=us-central1
 - **Error handling**: services return null for not-found, Firebase errors propagate, UI handles via React Query loading/error states
 - **Services**: plain objects with async methods (not classes)
 - **Functions backend**: Repository pattern (baseRepository → per-collection repos), service layer for business logic, triggers for side effects
+- **Firebase env validation**: `lib/firebase/config.ts` throws at module load if any of the 6 VITE_FIREBASE_* env vars are missing — early failure, never silently missing
+- **Timestamp representation**: Three formats coexist — ISO strings (client), Firestore Timestamp objects (Firestore), and the shared package's `timestampSchema` union type that accepts all three
+- **Vote ID format**: `{issueId}_{userId}` composite string — enables fast single-doc lookup without querying
+- **Client-side optimistic updates**: Issue creation also increments `users/{uid}/issuesReported` client-side for immediate UI feedback (Cloud Function backs it up server-side)
+- **Database listener fallback**: `listenToIssues()` handles `failed-precondition` (missing composite index) by falling back to a simple query + client-side sort

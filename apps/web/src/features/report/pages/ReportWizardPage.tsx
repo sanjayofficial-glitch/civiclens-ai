@@ -107,7 +107,7 @@ export default function ReportWizardPage() {
 
   // Persist draft (exclude localPhoto — blob: URLs don't survive reload)
   useEffect(() => {
-    const { localPhoto, ...persistable } = draft;
+    const { localPhoto: _localPhoto, ...persistable } = draft;
     localStorage.setItem(DRAFT_KEY, JSON.stringify(persistable));
   }, [draft]);
 
@@ -240,7 +240,7 @@ export default function ReportWizardPage() {
 
   const fileInputRef    = useRef<HTMLInputElement>(null);
   const galleryInputRef = useRef<HTMLInputElement>(null);
-  const searchTimeout   = useRef<ReturnType<typeof setTimeout>>();
+  const searchTimeout   = useRef<ReturnType<typeof setTimeout>>(undefined);
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];

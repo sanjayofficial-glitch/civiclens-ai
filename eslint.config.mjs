@@ -61,8 +61,5 @@ export default tseslint.config(
       'no-console': ['warn', { allow: ['warn', 'error'] }],
     },
   },
-  {
-    files: ['apps/web/**/*.{ts,tsx}'],
-    extends: [import('eslint-config-next/core-web-vitals')],
-  },
+  // Next.js ESLint config intentionally omitted — this is a Vite React project
 );
