@@ -4,16 +4,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
 import 'leaflet/dist/leaflet.css';
 import {
-  Camera,
-  ImagePlus,
-  MapPin,
-  Sparkles,
-  FileText,
-  CheckCircle2,
-  ChevronLeft,
-  ChevronRight,
-  Crosshair,
-  Search,
+  Camera, ImagePlus, MapPin, Sparkles, FileText, CheckCircle2,
+  ChevronLeft, ChevronRight, Crosshair, Search, Loader2,
 } from 'lucide-react';
 import { MapContainer, TileLayer, Marker, useMapEvents, useMap } from 'react-leaflet';
 import L from 'leaflet';
@@ -34,9 +26,9 @@ import { UploadService } from '@/services/upload.service';
 import { AiService } from '@/services/ai.service';
 import { GeolocationService } from '@/services/geolocation.service';
 
-// Default center: New York City
-const DEFAULT_CENTER: [number, number] = [40.7128, -74.006];
-const DEFAULT_ZOOM = 14;
+const DEFAULT_CENTER: [number, number] = [20.5937, 78.9629]; // India center
+const DEFAULT_ZOOM = 5;
+const DETAIL_ZOOM = 15;
 
 const pinIcon = L.divIcon({
   className: '',
@@ -46,22 +38,24 @@ const pinIcon = L.divIcon({
 });
 
 const STEPS = [
-  { id: 'camera', label: 'Camera', icon: Camera },
-  { id: 'gallery', label: 'Gallery', icon: ImagePlus },
-  { id: 'location', label: 'Location', icon: MapPin },
-  { id: 'ai', label: 'AI Review', icon: Sparkles },
+  { id: 'camera',      label: 'Camera',      icon: Camera },
+  { id: 'gallery',     label: 'Gallery',     icon: ImagePlus },
+  { id: 'location',    label: 'Location',    icon: MapPin },
+  { id: 'ai',          label: 'AI Review',   icon: Sparkles },
   { id: 'description', label: 'Description', icon: FileText },
-  { id: 'confirm', label: 'Confirm', icon: CheckCircle2 },
+  { id: 'confirm',     label: 'Confirm',     icon: CheckCircle2 },
 ] as const;
 
 const DRAFT_KEY = 'blockseblock-report-draft';
 
 interface ReportDraft {
   step: number;
-  photos: string[];
+  photos: string[];         // Firebase download URLs after upload, local blob: URLs before
+  localPhoto: string | null; // blob: URL of original — used for display before upload completes
   address: string;
   latitude: number;
   longitude: number;
+  hasCustomLocation: boolean;
   title: string;
   description: string;
   category: IssueCategory;
@@ -72,9 +66,11 @@ interface ReportDraft {
 const defaultDraft: ReportDraft = {
   step: 0,
   photos: [],
+  localPhoto: null,
   address: '',
   latitude: DEFAULT_CENTER[0],
   longitude: DEFAULT_CENTER[1],
+  hasCustomLocation: false,
   title: '',
   description: '',
   category: 'pothole',
@@ -84,7 +80,16 @@ const defaultDraft: ReportDraft = {
 function loadDraft(): ReportDraft {
   try {
     const raw = localStorage.getItem(DRAFT_KEY);
-    return raw ? { ...defaultDraft, ...JSON.parse(raw) } : defaultDraft;
+    if (!raw) return defaultDraft;
+    const parsed = JSON.parse(raw) as ReportDraft;
+    // Never restore blob: URLs — they don't survive page reload
+    return {
+      ...defaultDraft,
+      ...parsed,
+      localPhoto: null,
+      // Keep only Firebase https:// URLs; discard any stale blob: URLs
+      photos: (parsed.photos ?? []).filter((p: string) => p.startsWith('https://')),
+    };
   } catch {
     return defaultDraft;
   }
@@ -96,10 +101,36 @@ export default function ReportWizardPage() {
   const [draft, setDraft] = useState<ReportDraft>(loadDraft);
   const [aiLoading, setAiLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [locating, setLocating] = useState(false);
+  // Store the raw Blob in a ref so we can pass it to AI without re-fetching
+  const photoBlob = useRef<Blob | null>(null);
 
+  // Persist draft (exclude localPhoto — blob: URLs don't survive reload)
   useEffect(() => {
-    localStorage.setItem(DRAFT_KEY, JSON.stringify(draft));
+    const { localPhoto, ...persistable } = draft;
+    localStorage.setItem(DRAFT_KEY, JSON.stringify(persistable));
   }, [draft]);
+
+  // Auto-detect location when user enters the location step
+  useEffect(() => {
+    if (draft.step === 2 && !draft.hasCustomLocation) {
+      setLocating(true);
+      GeolocationService.getCurrentPosition()
+        .then((pos) => {
+          const { latitude, longitude } = pos.coords;
+          setDraft((d) => ({ ...d, latitude, longitude, hasCustomLocation: true }));
+          reverseGeocode(latitude, longitude).then((addr) => {
+            if (addr) setDraft((d) => ({ ...d, address: addr }));
+          });
+        })
+        .catch(() => {
+          // Silent — user can still click map or type address
+        })
+        .finally(() => setLocating(false));
+    }
+  // Only run when entering step 2
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [draft.step]);
 
   const step = draft.step;
   const progress = ((step + 1) / STEPS.length) * 100;
@@ -108,63 +139,55 @@ export default function ReportWizardPage() {
     setDraft((d) => ({ ...d, ...patch }));
   }, []);
 
+  const reverseGeocode = async (lat: number, lng: number): Promise<string | null> => {
+    try {
+      const res = await fetch(
+        `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&addressdetails=1`,
+        { headers: { 'Accept-Language': 'en' } },
+      );
+      const data = await res.json() as { display_name?: string };
+      return data.display_name ?? null;
+    } catch {
+      return null;
+    }
+  };
+
   const next = async () => {
-    // Step 2 = Location: advance to step 3 (AI Review) and kick off AI + upload in background
+    // Step 2 → 3: move to AI step immediately, run upload + AI in background
     if (step === 2) {
-      // Move to the AI review step immediately so the loading UI shows
       update({ step: 3 });
 
-      if (draft.photos.length > 0 && user && !draft.aiSuggestion) {
+      if (photoBlob.current && user && !draft.aiSuggestion) {
         setAiLoading(true);
+        const blob = photoBlob.current;
         try {
-          // Assume the first photo is a local object URL
-          const res = await fetch(draft.photos[0]);
-          const blob = await res.blob();
-
-          // Convert Blob to Base64 for Gemini
-          const base64Image = await new Promise<string>((resolve, reject) => {
-            const reader = new FileReader();
-            reader.onloadend = () => {
-              const result = (reader.result as string).split(',')[1];
-              resolve(result);
-            };
-            reader.onerror = reject;
-            reader.readAsDataURL(blob);
-          });
-
-          // Run AI analysis and Firebase upload concurrently
-          const path = `users/${user.uid}/uploads/${Date.now()}_${Math.random().toString(36).substring(7)}`;
-          const [uploadResult, aiData] = await Promise.all([
-            UploadService.uploadFile(new File([blob], 'photo.jpg', { type: blob.type }), path).catch(
-              () => null as string | null,
-            ),
-            AiService.analyzeIssueImage(base64Image, blob.type).catch(() => null),
+          // Upload to issues/ path — public read, no auth needed to display
+          const uploadPath = `issues/${Date.now()}_${Math.random().toString(36).slice(2)}`;
+          const [uploadUrl, aiData] = await Promise.all([
+            UploadService.uploadFile(
+              new File([blob], 'photo.jpg', { type: blob.type || 'image/jpeg' }),
+              uploadPath,
+            ).catch(() => null as string | null),
+            AiService.analyzeIssueImage(blob).catch(() => null),
           ]);
 
-          if (!uploadResult) {
-            toast.error('Photo upload failed. Your report will be submitted without photos.');
-          }
-
-          if (!aiData) {
-            toast.error('AI analysis failed. You can fill in the details manually.');
-          }
+          if (!uploadUrl) toast.error('Photo upload failed — report will have no image.');
+          if (!aiData)  toast.error('AI analysis failed — fill in details manually.');
 
           setDraft((d) => ({
             ...d,
-            photos: uploadResult ? [uploadResult, ...d.photos.slice(1)] : d.photos,
-            ...(aiData
-              ? {
-                  aiSuggestion: aiData,
-                  category: aiData.category,
-                  severity: aiData.severity,
-                  title: aiData.suggestedTitle,
-                  description: aiData.suggestedDescription,
-                }
-              : {}),
+            photos: uploadUrl ? [uploadUrl] : d.photos,
+            ...(aiData ? {
+              aiSuggestion: aiData,
+              category: aiData.category,
+              severity: aiData.severity,
+              title: aiData.suggestedTitle,
+              description: aiData.suggestedDescription,
+            } : {}),
           }));
-        } catch (error) {
-          console.error('AI Analysis step failed:', error);
-          toast.error('Something went wrong with AI analysis. You can fill in details manually.');
+        } catch (err) {
+          console.error('Step 3 background task failed:', err);
+          toast.error('Something went wrong. Fill in details manually.');
         } finally {
           setAiLoading(false);
         }
@@ -181,14 +204,10 @@ export default function ReportWizardPage() {
   };
 
   const submit = async () => {
-    if (!user) {
-      toast.error('You must be signed in to submit a report.');
-      return;
-    }
+    if (!user) { toast.error('Sign in to submit a report.'); return; }
     setSubmitting(true);
-    
     try {
-      const geohash = draft.latitude.toFixed(5) + ',' + draft.longitude.toFixed(5);
+      const geohash = `${draft.latitude.toFixed(5)},${draft.longitude.toFixed(5)}`;
       await IssueService.create({
         title: draft.title || 'Untitled Report',
         description: draft.description,
@@ -201,72 +220,68 @@ export default function ReportWizardPage() {
           address: draft.address || 'Unknown address',
         },
         reporterId: user.uid,
-        tags: [],
-        media: {
-          images: draft.photos,
-          videos: [],
-        },
+        tags: draft.aiSuggestion?.suggestedTags ?? [],
+        media: { images: draft.photos, videos: [] },
         aiAnalysis: draft.aiSuggestion,
-        verification: {
-          upvotes: 0,
-          downvotes: 0,
-          verifiedBy: [],
-        },
+        verification: { upvotes: 0, downvotes: 0, verifiedBy: [] },
       });
+      // Release blob URL memory
+      if (draft.localPhoto) URL.revokeObjectURL(draft.localPhoto);
       localStorage.removeItem(DRAFT_KEY);
-      toast.success('Report submitted successfully!');
+      toast.success('Report submitted!');
       navigate('/home');
     } catch (err) {
       console.error(err);
-      toast.error('Failed to submit report. Please try again.');
+      toast.error('Failed to submit. Please try again.');
     } finally {
       setSubmitting(false);
     }
   };
 
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  const fileInputRef    = useRef<HTMLInputElement>(null);
   const galleryInputRef = useRef<HTMLInputElement>(null);
-  const searchTimeoutRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  const searchTimeout   = useRef<ReturnType<typeof setTimeout>>();
 
-  const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
-    // Camera step uses a FileReader/DataURL path; just pass through
-    const file = event.target.files?.[0];
-    if (file) {
-      const objectUrl = URL.createObjectURL(file);
-      update({ photos: [...draft.photos, objectUrl] });
-    }
-    // Reset so the same file can be re-selected
-    event.target.value = '';
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    photoBlob.current = file;
+    const objectUrl = URL.createObjectURL(file);
+    // Revoke previous local photo
+    if (draft.localPhoto) URL.revokeObjectURL(draft.localPhoto);
+    update({ photos: [objectUrl], localPhoto: objectUrl });
+    e.target.value = '';
   };
 
-  const handleGallerySelect = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const files = Array.from(event.target.files ?? []);
-    if (files.length === 0) return;
+  const handleGallerySelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files ?? []);
+    if (!files.length) return;
+    if (!photoBlob.current && files[0]) photoBlob.current = files[0];
     const newUrls = files.map((f) => URL.createObjectURL(f));
     update({ photos: [...draft.photos, ...newUrls] });
-    // Reset so the same file(s) can be re-selected after removal
-    event.target.value = '';
+    e.target.value = '';
   };
 
   const handleUseCurrentLocation = async () => {
+    setLocating(true);
     try {
-      const position = await GeolocationService.getCurrentPosition();
-      const { latitude, longitude } = position.coords;
-      update({ latitude, longitude });
-      // Reverse geocode the coordinates to get the address
+      const pos = await GeolocationService.getCurrentPosition();
+      const { latitude, longitude } = pos.coords;
+      update({ latitude, longitude, hasCustomLocation: true });
       reverseGeocode(latitude, longitude).then((addr) => {
         if (addr) update({ address: addr });
       });
       toast.success('Location found');
-    } catch {
-      toast.error('Could not get your location. Check your browser permissions.');
+    } catch (err) {
+      toast.error((err as Error).message);
+    } finally {
+      setLocating(false);
     }
   };
 
   const handleAddressSearch = useCallback(async (value: string) => {
     update({ address: value });
     if (value.length < 3) return;
-    // Debounced geocoding search
     try {
       const res = await fetch(
         `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(value)}&limit=1`,
@@ -278,37 +293,22 @@ export default function ReportWizardPage() {
           latitude: parseFloat(data[0].lat),
           longitude: parseFloat(data[0].lon),
           address: data[0].display_name,
+          hasCustomLocation: true,
         });
       }
-    } catch {
-      // Silent fail — user-entered address text is still kept
-    }
+    } catch { /* keep typed text */ }
   }, [update]);
 
   const onAddressChange = useCallback((value: string) => {
-    clearTimeout(searchTimeoutRef.current);
-    searchTimeoutRef.current = setTimeout(() => handleAddressSearch(value), 600);
+    clearTimeout(searchTimeout.current);
+    searchTimeout.current = setTimeout(() => handleAddressSearch(value), 500);
   }, [handleAddressSearch]);
 
-  const reverseGeocode = async (lat: number, lng: number): Promise<string | null> => {
-    try {
-      const res = await fetch(
-        `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&addressdetails=1`,
-        { headers: { 'Accept-Language': 'en' } },
-      );
-      const data = await res.json() as { display_name?: string };
-      return data.display_name ?? null;
-    } catch {
-      return null;
-    }
-  };
-
-  /** Inner component that listens for map clicks and places a pin */
   function MapClickHandler() {
     useMapEvents({
       click(e) {
         const { lat, lng } = e.latlng;
-        update({ latitude: lat, longitude: lng });
+        update({ latitude: lat, longitude: lng, hasCustomLocation: true });
         reverseGeocode(lat, lng).then((addr) => {
           if (addr) update({ address: addr });
         });
@@ -317,17 +317,21 @@ export default function ReportWizardPage() {
     return null;
   }
 
-  /** Inner component that updates the map view when coordinates change externally */
-  function MapUpdater({ center }: { center: [number, number] }) {
+  function MapUpdater({ center, zoom }: { center: [number, number]; zoom: number }) {
     const map = useMap();
     useEffect(() => {
-      map.flyTo(center, map.getZoom(), { duration: 0.5 });
-    }, [center, map]);
+      map.flyTo(center, zoom, { duration: 0.6 });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [center[0], center[1], zoom]);
     return null;
   }
 
+  // The display photo — prefer local blob URL for instant preview, fall back to Firebase URL
+  const displayPhoto = draft.localPhoto ?? draft.photos[0] ?? null;
+
   return (
     <AppLayout hideNav>
+      {/* Header / stepper */}
       <header className="sticky top-0 z-30 border-b border-border/50 bg-background/80 px-4 py-3 pt-safe backdrop-blur-md">
         <div className="flex items-center gap-3">
           <Button variant="ghost" size="icon-sm" onClick={back} aria-label="Go back">
@@ -345,17 +349,8 @@ export default function ReportWizardPage() {
           {STEPS.map((s, i) => {
             const Icon = s.icon;
             return (
-              <div
-                key={s.id}
-                className={`flex flex-col items-center gap-1 ${
-                  i <= step ? 'text-primary' : 'text-muted-foreground'
-                }`}
-              >
-                <div
-                  className={`grid size-8 place-items-center rounded-full ${
-                    i <= step ? 'bg-primary/15' : 'bg-muted'
-                  }`}
-                >
+              <div key={s.id} className={`flex flex-col items-center gap-1 ${i <= step ? 'text-primary' : 'text-muted-foreground'}`}>
+                <div className={`grid size-8 place-items-center rounded-full ${i <= step ? 'bg-primary/15' : 'bg-muted'}`}>
                   <Icon className="size-4" aria-hidden="true" />
                 </div>
                 <span className="hidden text-[10px] sm:block">{s.label}</span>
@@ -365,82 +360,60 @@ export default function ReportWizardPage() {
         </div>
       </header>
 
+      {/* Steps content */}
       <AnimatePresence mode="wait">
         <motion.div
           key={step}
           initial={{ opacity: 0, x: 20 }}
           animate={{ opacity: 1, x: 0 }}
           exit={{ opacity: 0, x: -20 }}
-          transition={{ duration: 0.25 }}
-          className="px-4 py-6"
+          transition={{ duration: 0.2 }}
+          className="px-4 py-6 pb-28"
         >
+          {/* ── Step 0: Camera ── */}
           {step === 0 && (
             <div className="space-y-4">
-              <div className="glass flex aspect-[4/3] flex-col items-center justify-center rounded-2xl border border-dashed border-primary/30">
-                <Camera className="mb-3 size-12 text-primary" aria-hidden="true" />
-                <p className="font-medium">Take a Photo</p>
-                <p className="mt-1 text-sm text-muted-foreground">
-                  Capture the civic issue clearly
-                </p>
-                <input 
-                  type="file" 
-                  accept="image/*" 
-                  capture="environment" 
-                  className="hidden" 
-                  ref={fileInputRef} 
-                  onChange={handleFileSelect} 
-                />
-                <Button className="mt-4" onClick={() => fileInputRef.current?.click()}>
-                  Take Photo
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                className={`glass flex w-full aspect-[4/3] flex-col items-center justify-center rounded-2xl border-2 border-dashed transition-colors ${
+                  displayPhoto ? 'border-primary/40' : 'border-primary/20 hover:border-primary/40'
+                }`}
+              >
+                {displayPhoto ? (
+                  <img src={displayPhoto} alt="Captured" className="size-full rounded-2xl object-cover" />
+                ) : (
+                  <>
+                    <Camera className="mb-3 size-12 text-primary" />
+                    <p className="font-medium">Take a Photo</p>
+                    <p className="mt-1 text-sm text-muted-foreground">Capture the civic issue clearly</p>
+                  </>
+                )}
+              </button>
+              <input type="file" accept="image/*" capture="environment" className="hidden" ref={fileInputRef} onChange={handleFileSelect} />
+              {displayPhoto && (
+                <Button variant="outline" fullWidth onClick={() => fileInputRef.current?.click()}>
+                  <Camera className="size-4" /> Retake Photo
                 </Button>
-              </div>
-              {draft.photos.length > 0 && (
-                <div className="flex gap-2 overflow-x-auto no-scrollbar">
-                  {draft.photos.map((p, i) => (
-                    <img
-                      key={i}
-                      src={p}
-                      alt=""
-                      className="size-20 rounded-lg object-cover"
-                    />
-                  ))}
-                </div>
               )}
             </div>
           )}
 
+          {/* ── Step 1: Gallery ── */}
           {step === 1 && (
             <div className="space-y-4">
-              <p className="text-sm text-muted-foreground">
-                Add more photos from your gallery (optional)
-              </p>
-              <input 
-                type="file" 
-                accept="image/*" 
-                multiple
-                className="hidden" 
-                ref={galleryInputRef} 
-                onChange={handleGallerySelect} 
-              />
+              <p className="text-sm text-muted-foreground">Add more photos (optional)</p>
+              <input type="file" accept="image/*" multiple className="hidden" ref={galleryInputRef} onChange={handleGallerySelect} />
               <div className="grid grid-cols-3 gap-2">
-                {draft.photos.length > 0 && draft.photos.map((p, i) => (
+                {draft.photos.map((p, i) => (
                   <div key={i} className="relative aspect-square">
-                    <img
-                      src={p}
-                      alt=""
-                      className="size-full rounded-xl object-cover"
-                    />
+                    <img src={p} alt="" className="size-full rounded-xl object-cover" />
                     <button
                       type="button"
-                      onClick={() => {
-                        URL.revokeObjectURL(p);
-                        update({ photos: draft.photos.filter((_, j) => j !== i) });
-                      }}
-                      className="absolute -right-1.5 -top-1.5 grid size-5 place-items-center rounded-full bg-destructive text-destructive-foreground text-xs shadow-sm"
+                      onClick={() => update({ photos: draft.photos.filter((_, j) => j !== i) })}
+                      className="absolute -right-1.5 -top-1.5 grid size-5 place-items-center rounded-full bg-destructive text-destructive-foreground text-xs shadow"
                       aria-label="Remove photo"
-                    >
-                      ×
-                    </button>
+                    >×</button>
                   </div>
                 ))}
                 {Array.from({ length: Math.max(0, 6 - draft.photos.length) }).map((_, n) => (
@@ -448,7 +421,7 @@ export default function ReportWizardPage() {
                     key={`empty-${n}`}
                     type="button"
                     onClick={() => galleryInputRef.current?.click()}
-                    className="glass aspect-square rounded-xl border border-border/50 transition-colors hover:border-primary/50"
+                    className="glass aspect-square rounded-xl border border-border/50 hover:border-primary/50"
                   >
                     <ImagePlus className="mx-auto size-6 text-muted-foreground" />
                   </button>
@@ -457,12 +430,19 @@ export default function ReportWizardPage() {
             </div>
           )}
 
+          {/* ── Step 2: Location ── */}
           {step === 2 && (
             <div className="space-y-4">
+              {locating && (
+                <div className="flex items-center gap-2 rounded-xl bg-primary/10 px-4 py-2 text-sm text-primary">
+                  <Loader2 className="size-4 animate-spin" />
+                  Detecting your location…
+                </div>
+              )}
               <div className="overflow-hidden rounded-2xl border border-border/50">
                 <MapContainer
                   center={[draft.latitude, draft.longitude]}
-                  zoom={DEFAULT_ZOOM}
+                  zoom={draft.hasCustomLocation ? DETAIL_ZOOM : DEFAULT_ZOOM}
                   className="h-64 w-full"
                   zoomControl={false}
                 >
@@ -470,12 +450,14 @@ export default function ReportWizardPage() {
                     attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
                     url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
                   />
-                  <Marker
-                    position={[draft.latitude, draft.longitude]}
-                    icon={pinIcon}
-                  />
+                  {draft.hasCustomLocation && (
+                    <Marker position={[draft.latitude, draft.longitude]} icon={pinIcon} />
+                  )}
                   <MapClickHandler />
-                  <MapUpdater center={[draft.latitude, draft.longitude]} />
+                  <MapUpdater
+                    center={[draft.latitude, draft.longitude]}
+                    zoom={draft.hasCustomLocation ? DETAIL_ZOOM : DEFAULT_ZOOM}
+                  />
                 </MapContainer>
               </div>
               <div className="space-y-2">
@@ -484,31 +466,37 @@ export default function ReportWizardPage() {
                   <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
                   <Input
                     id="address"
-                    placeholder="Search address or click the map..."
+                    placeholder="Search or click map…"
                     className="pl-10"
-                    value={draft.address}
+                    defaultValue={draft.address}
                     onChange={(e) => onAddressChange(e.target.value)}
                   />
                 </div>
-                <p className="text-xs text-muted-foreground">
-                  Click the map to place a pin, or search for an address.
-                </p>
+                {draft.hasCustomLocation && (
+                  <p className="text-xs text-success">
+                    📍 {draft.latitude.toFixed(5)}, {draft.longitude.toFixed(5)}
+                  </p>
+                )}
               </div>
-              <Button variant="outline" fullWidth onClick={handleUseCurrentLocation}>
-                <Crosshair className="size-4" aria-hidden="true" />
-                Use Current Location
+              <Button variant="outline" fullWidth onClick={handleUseCurrentLocation} disabled={locating}>
+                {locating ? <Loader2 className="size-4 animate-spin" /> : <Crosshair className="size-4" />}
+                {locating ? 'Detecting…' : 'Use Current Location'}
               </Button>
             </div>
           )}
 
+          {/* ── Step 3: AI Review ── */}
           {step === 3 && (
             <div className="space-y-4">
               {aiLoading ? (
                 <Card>
                   <CardContent className="flex flex-col items-center py-12">
                     <Sparkles className="mb-3 size-10 animate-pulse text-primary" />
-                    <p className="font-medium">AI is analyzing your photo...</p>
-                    <p className="text-sm text-muted-foreground">This takes a few seconds</p>
+                    <p className="font-medium">Analyzing your photo…</p>
+                    <p className="mt-1 text-sm text-muted-foreground">Usually takes 2–5 seconds</p>
+                    {displayPhoto && (
+                      <img src={displayPhoto} alt="" className="mt-4 h-24 w-24 rounded-xl object-cover opacity-60" />
+                    )}
                   </CardContent>
                 </Card>
               ) : draft.aiSuggestion ? (
@@ -517,16 +505,12 @@ export default function ReportWizardPage() {
                     <div className="flex items-center gap-2">
                       <Sparkles className="size-5 text-primary" />
                       <p className="font-semibold">AI Analysis</p>
-                      <Badge variant="secondary">
-                        {Math.round(draft.aiSuggestion.confidence * 100)}% confidence
-                      </Badge>
+                      <Badge variant="secondary">{Math.round(draft.aiSuggestion.confidence * 100)}% confidence</Badge>
                     </div>
                     <div className="grid grid-cols-2 gap-3">
                       <div>
                         <p className="text-xs text-muted-foreground">Category</p>
-                        <p className="font-medium capitalize">
-                          {draft.aiSuggestion.category.replace('_', ' ')}
-                        </p>
+                        <p className="font-medium capitalize">{draft.aiSuggestion.category.replace('_', ' ')}</p>
                       </div>
                       <div>
                         <p className="text-xs text-muted-foreground">Severity</p>
@@ -534,34 +518,27 @@ export default function ReportWizardPage() {
                       </div>
                     </div>
                     <p className="text-sm">{draft.aiSuggestion.suggestedDescription}</p>
-                    {draft.aiSuggestion.suggestedTags && draft.aiSuggestion.suggestedTags.length > 0 && (
-                      <div className="flex flex-wrap gap-1 mt-2">
-                        {draft.aiSuggestion.suggestedTags.map((tag) => (
-                          <Badge key={tag} variant="outline" className="text-[10px]">#{tag}</Badge>
+                    {draft.aiSuggestion.suggestedTags?.length > 0 && (
+                      <div className="flex flex-wrap gap-1">
+                        {draft.aiSuggestion.suggestedTags.map((t) => (
+                          <Badge key={t} variant="outline" className="text-[10px]">#{t}</Badge>
                         ))}
                       </div>
                     )}
-                    <p className="text-xs text-muted-foreground mt-2 border-t pt-2 border-border/50">
-                      Duplicate probability: {Math.round(draft.aiSuggestion.duplicateProbability * 100)}%
-                    </p>
-                    <p className="text-xs text-muted-foreground">
-                      You can edit these suggestions in the next step.
+                    <p className="text-xs text-muted-foreground border-t pt-2">
+                      You can edit these in the next step.
                     </p>
                   </CardContent>
                 </Card>
               ) : (
-                // AI was skipped (no photo) or failed — show a clear fallback
                 <Card>
                   <CardContent className="flex flex-col items-center py-12 text-center">
                     <Sparkles className="mb-3 size-10 text-muted-foreground" />
                     <p className="font-medium">No AI Analysis</p>
                     <p className="mt-1 text-sm text-muted-foreground">
                       {draft.photos.length === 0
-                        ? 'No photo was added. You can fill in the issue details manually.'
-                        : 'AI analysis was unavailable. You can fill in the issue details manually.'}
-                    </p>
-                    <p className="mt-3 text-xs text-muted-foreground">
-                      Press Continue to fill in the details yourself.
+                        ? 'No photo added — fill in details manually.'
+                        : 'AI analysis unavailable — fill in details manually.'}
                     </p>
                   </CardContent>
                 </Card>
@@ -569,24 +546,16 @@ export default function ReportWizardPage() {
             </div>
           )}
 
+          {/* ── Step 4: Description ── */}
           {step === 4 && (
             <div className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="title">Title</Label>
-                <Input
-                  id="title"
-                  value={draft.title}
-                  onChange={(e) => update({ title: e.target.value })}
-                />
+                <Input id="title" value={draft.title} onChange={(e) => update({ title: e.target.value })} />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="description">Description</Label>
-                <Textarea
-                  id="description"
-                  rows={4}
-                  value={draft.description}
-                  onChange={(e) => update({ description: e.target.value })}
-                />
+                <Textarea id="description" rows={4} value={draft.description} onChange={(e) => update({ description: e.target.value })} />
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-2">
@@ -594,15 +563,9 @@ export default function ReportWizardPage() {
                   <select
                     className="flex h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
                     value={draft.category}
-                    onChange={(e) =>
-                      update({ category: e.target.value as IssueCategory })
-                    }
+                    onChange={(e) => update({ category: e.target.value as IssueCategory })}
                   >
-                    {CATEGORY_OPTIONS.map((o) => (
-                      <option key={o.value} value={o.value}>
-                        {o.label}
-                      </option>
-                    ))}
+                    {CATEGORY_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
                   </select>
                 </div>
                 <div className="space-y-2">
@@ -610,31 +573,23 @@ export default function ReportWizardPage() {
                   <select
                     className="flex h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
                     value={draft.severity}
-                    onChange={(e) =>
-                      update({ severity: e.target.value as IssueSeverity })
-                    }
+                    onChange={(e) => update({ severity: e.target.value as IssueSeverity })}
                   >
-                    {SEVERITY_OPTIONS.map((o) => (
-                      <option key={o.value} value={o.value}>
-                        {o.label}
-                      </option>
-                    ))}
+                    {SEVERITY_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
                   </select>
                 </div>
               </div>
             </div>
           )}
 
+          {/* ── Step 5: Confirm ── */}
           {step === 5 && (
             <div className="space-y-4">
               <Card>
                 <CardContent className="space-y-3 p-4">
-                  {draft.photos[0] && (
-                    <img
-                      src={draft.photos[0]}
-                      alt=""
-                      className="aspect-video w-full rounded-lg object-cover"
-                    />
+                  {/* Show Firebase URL if uploaded, otherwise local preview */}
+                  {displayPhoto && (
+                    <img src={displayPhoto} alt="" className="aspect-video w-full rounded-lg object-cover" />
                   )}
                   <p className="font-semibold">{draft.title || 'Untitled Report'}</p>
                   <p className="text-sm text-muted-foreground">{draft.description}</p>
@@ -644,9 +599,12 @@ export default function ReportWizardPage() {
                   </div>
                   {draft.address && (
                     <p className="flex items-center gap-1 text-sm text-muted-foreground">
-                      <MapPin className="size-4" />
+                      <MapPin className="size-4 shrink-0" />
                       {draft.address}
                     </p>
+                  )}
+                  {!draft.hasCustomLocation && (
+                    <p className="text-xs text-destructive">⚠ No location set — go back and pin your location.</p>
                   )}
                 </CardContent>
               </Card>
@@ -658,12 +616,16 @@ export default function ReportWizardPage() {
         </motion.div>
       </AnimatePresence>
 
+      {/* Footer */}
       <footer className="fixed inset-x-0 bottom-0 border-t border-border/50 bg-background/90 px-4 py-4 pb-safe backdrop-blur-md">
         <div className="mx-auto flex max-w-lg gap-3">
           {step < STEPS.length - 1 ? (
             <Button fullWidth onClick={next} disabled={aiLoading}>
-              {aiLoading ? 'Analyzing...' : 'Continue'}
-              {!aiLoading && <ChevronRight className="size-4" />}
+              {aiLoading ? (
+                <><Loader2 className="size-4 animate-spin" /> Analyzing…</>
+              ) : (
+                <>Continue <ChevronRight className="size-4" /></>
+              )}
             </Button>
           ) : (
             <Button fullWidth onClick={submit} isLoading={submitting}>
