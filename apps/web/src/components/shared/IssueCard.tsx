@@ -8,7 +8,7 @@ import {
   getSeverityMeta,
   getStatusMeta,
 } from '@/lib/issue-meta';
-import { formatRelativeTime } from '@/data/mock-data';
+import { formatRelativeTime } from '@/lib/constants';
 import { cn } from '@/lib/utils';
 
 interface IssueCardProps {

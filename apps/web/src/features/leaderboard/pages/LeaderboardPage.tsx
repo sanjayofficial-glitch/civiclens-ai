@@ -6,7 +6,10 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
-import { MOCK_LEADERBOARD, MOCK_BADGES, MOCK_USER } from '@/data/mock-data';
+import { Skeleton } from '@/components/ui/skeleton';
+import { useLeaderboard } from '@/hooks/data/useLeaderboard';
+import { useUser } from '@/hooks/data/useUser';
+import { BADGES } from '@/lib/constants';
 import type { LeaderboardPeriod } from '@blockseblock/shared';
 import { cn } from '@/lib/utils';
 
@@ -25,7 +28,12 @@ function RankIcon({ rank }: { rank: number }) {
 
 export default function LeaderboardPage() {
   const [period, setPeriod] = useState<LeaderboardPeriod>('weekly');
-  const entries = MOCK_LEADERBOARD;
+  const { leaders, loading } = useLeaderboard(50);
+  const { user } = useUser();
+  const entries = leaders;
+  
+  // Create an array mapping for top 3: [2nd, 1st, 3rd]
+  const topThree = [entries[1], entries[0], entries[2]];
 
   return (
     <AppLayout>
@@ -52,82 +60,88 @@ export default function LeaderboardPage() {
                 animate={{ opacity: 1, y: 0 }}
                 className="space-y-6"
               >
-                <div className="flex items-end justify-center gap-4 pb-2">
-                  {[entries[1], entries[0], entries[2]].map((entry, i) => {
-                    if (!entry) return null;
-                    const rank = i === 0 ? 2 : i === 1 ? 1 : 3;
-                    const heights = ['h-20', 'h-28', 'h-16'];
-                    return (
-                      <div
-                        key={entry.userId}
-                        className={cn(
-                          'flex flex-col items-center',
-                          i === 1 && '-mt-2',
-                        )}
-                      >
-                        <Avatar className={cn('mb-2', i === 1 ? 'size-16' : 'size-12')}>
-                          <AvatarFallback>
-                            {entry.displayName.slice(0, 2)}
-                          </AvatarFallback>
-                        </Avatar>
-                        <RankIcon rank={rank} />
-                        <p className="mt-1 max-w-[80px] truncate text-xs font-medium">
-                          {entry.displayName}
-                        </p>
-                        <p className="text-xs text-muted-foreground">
-                          {entry.score.toLocaleString()} pts
-                        </p>
-                        <div
-                          className={cn(
-                            'mt-2 w-16 rounded-t-lg bg-primary/20',
-                            heights[i],
-                          )}
-                        />
-                      </div>
-                    );
-                  })}
-                </div>
-
-                <div className="space-y-2">
-                  {entries.map((entry, i) => {
-                    const rank = i + 1;
-                    const isMe = entry.userId === MOCK_USER.uid;
-                    return (
-                      <Card
-                        key={entry.userId}
-                        className={cn(isMe && 'border-primary/30 bg-primary/5')}
-                      >
-                        <CardContent className="flex items-center gap-3 p-3">
-                          <div className="flex w-8 justify-center">
+                {loading ? (
+                  <div className="space-y-4">
+                    <Skeleton className="h-32 w-full rounded-xl" />
+                    <Skeleton className="h-16 w-full rounded-xl" />
+                    <Skeleton className="h-16 w-full rounded-xl" />
+                  </div>
+                ) : (
+                  <>
+                    <div className="flex items-end justify-center gap-4 pb-2">
+                      {topThree.map((entry, i) => {
+                        if (!entry) return null;
+                        const rank = i === 0 ? 2 : i === 1 ? 1 : 3;
+                        const heights = ['h-20', 'h-28', 'h-16'];
+                        return (
+                          <div
+                            key={entry.uid}
+                            className={cn(
+                              'flex flex-col items-center',
+                              i === 1 && '-mt-2',
+                            )}
+                          >
+                            <Avatar className={cn('mb-2', i === 1 ? 'size-16' : 'size-12')}>
+                              <AvatarFallback>
+                                {entry.displayName.slice(0, 2).toUpperCase()}
+                              </AvatarFallback>
+                            </Avatar>
                             <RankIcon rank={rank} />
-                          </div>
-                          <Avatar>
-                            <AvatarFallback>
-                              {entry.displayName.slice(0, 2)}
-                            </AvatarFallback>
-                          </Avatar>
-                          <div className="min-w-0 flex-1">
-                            <p className="truncate font-medium">
+                            <p className="mt-1 max-w-[80px] truncate text-xs font-medium">
                               {entry.displayName}
-                              {isMe && (
-                                <Badge variant="secondary" className="ml-2">
-                                  You
-                                </Badge>
-                              )}
                             </p>
                             <p className="text-xs text-muted-foreground">
-                              {entry.issuesReported} reports · {entry.issuesVerified}{' '}
-                              verified
+                              {entry.reputation.toLocaleString()} pts
                             </p>
+                            <div
+                              className={cn(
+                                'mt-2 w-16 rounded-t-lg bg-primary/20',
+                                heights[i],
+                              )}
+                            />
                           </div>
-                          <p className="font-bold text-primary">
-                            {entry.score.toLocaleString()}
-                          </p>
-                        </CardContent>
-                      </Card>
-                    );
-                  })}
-                </div>
+                        );
+                      })}
+                    </div>
+
+                    <div className="space-y-2">
+                      {entries.map((entry, i) => {
+                        const rank = i + 1;
+                        const isMe = user ? entry.uid === user.uid : false;
+                        return (
+                          <Card
+                            key={entry.uid}
+                            className={cn(isMe && 'border-primary/30 bg-primary/5')}
+                          >
+                            <CardContent className="flex items-center gap-3 p-3">
+                              <div className="flex w-8 justify-center">
+                                <RankIcon rank={rank} />
+                              </div>
+                              <Avatar>
+                                <AvatarFallback>
+                                  {entry.displayName.slice(0, 2).toUpperCase()}
+                                </AvatarFallback>
+                              </Avatar>
+                              <div className="min-w-0 flex-1">
+                                <p className="truncate font-medium">
+                                  {entry.displayName}
+                                  {isMe && (
+                                    <Badge variant="secondary" className="ml-2">
+                                      You
+                                    </Badge>
+                                  )}
+                                </p>
+                              </div>
+                              <p className="font-bold text-primary">
+                                {entry.reputation.toLocaleString()}
+                              </p>
+                            </CardContent>
+                          </Card>
+                        );
+                      })}
+                    </div>
+                  </>
+                )}
               </motion.div>
             </TabsContent>
           ))}
@@ -139,8 +153,8 @@ export default function LeaderboardPage() {
             Badges & Achievements
           </h2>
           <div className="grid grid-cols-2 gap-3">
-            {MOCK_BADGES.map((badge) => {
-              const earned = MOCK_USER.badges.includes(badge.id);
+            {BADGES.map((badge) => {
+              const earned = user?.badges?.includes(badge.id);
               return (
                 <Card
                   key={badge.id}

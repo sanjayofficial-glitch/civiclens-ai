@@ -19,9 +19,10 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { StatCard } from '@/components/shared/StatCard';
 import { IssueCard } from '@/components/shared/IssueCard';
-import { MOCK_ISSUES, MOCK_STATS } from '@/data/mock-data';
 import { getStatusMeta } from '@/lib/issue-meta';
 import type { IssueStatus } from '@blockseblock/shared';
+import { useIssues } from '@/hooks/data/useIssues';
+import { useCommunityStats } from '@/hooks/data/useAnalytics';
 import 'leaflet/dist/leaflet.css';
 
 const pinIcon = L.divIcon({
@@ -44,8 +45,11 @@ const CHART_DATA = [
 export default function GovernmentDashboardPage() {
   const [statusFilter, setStatusFilter] = useState<IssueStatus | 'all'>('all');
   const [search, setSearch] = useState('');
+  
+  const { issues, loading: issuesLoading } = useIssues({}, 500);
+  const { stats, loading: statsLoading } = useCommunityStats();
 
-  const queue = MOCK_ISSUES.filter((i) => {
+  const queue = issues.filter((i) => {
     if (statusFilter !== 'all' && i.status !== statusFilter) return false;
     if (search && !i.title.toLowerCase().includes(search.toLowerCase()))
       return false;
@@ -82,25 +86,25 @@ export default function GovernmentDashboardPage() {
       <div className="mb-6 grid grid-cols-2 gap-4 lg:grid-cols-4">
         <StatCard
           label="Active Issues"
-          value={MOCK_STATS.activeIssues}
+          value={statsLoading ? '-' : stats?.activeIssues ?? 0}
           icon={ClipboardList}
           trend="+12 this week"
         />
         <StatCard
           label="Resolved This Week"
-          value={MOCK_STATS.resolvedThisWeek}
+          value={statsLoading ? '-' : stats?.resolvedThisWeek ?? 0}
           icon={BarChart3}
           trend="+23%"
           trendUp
         />
         <StatCard
           label="Total Reports"
-          value={MOCK_STATS.totalReports.toLocaleString()}
+          value={statsLoading ? '-' : stats?.totalReports?.toLocaleString() ?? 0}
           icon={Filter}
         />
         <StatCard
           label="Verifications"
-          value={MOCK_STATS.communityVerifications.toLocaleString()}
+          value={statsLoading ? '-' : stats?.communityVerifications?.toLocaleString() ?? 0}
           icon={Search}
         />
       </div>
@@ -141,12 +145,14 @@ export default function GovernmentDashboardPage() {
               </div>
 
               <div className="space-y-3">
-                {queue.map((issue, i) => (
+                {issuesLoading ? (
+                  <p className="text-muted-foreground">Loading queue...</p>
+                ) : queue.map((issue, i) => (
                   <motion.div
                     key={issue.id}
                     initial={{ opacity: 0, y: 8 }}
                     animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: i * 0.05 }}
+                    transition={{ delay: Math.min(i * 0.05, 0.5) }}
                   >
                     <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
                       <div className="flex-1">
@@ -203,7 +209,7 @@ export default function GovernmentDashboardPage() {
                     'resolved',
                   ] as IssueStatus[]
                 ).map((status) => {
-                  const count = MOCK_ISSUES.filter(
+                  const count = issues.filter(
                     (i) => i.status === status,
                   ).length;
                   const meta = getStatusMeta(status);
@@ -233,7 +239,7 @@ export default function GovernmentDashboardPage() {
                 className="h-64 rounded-b-xl"
               >
                 <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
-                {MOCK_ISSUES.map((issue) => (
+                {issues.map((issue) => (
                   <Marker
                     key={issue.id}
                     position={[

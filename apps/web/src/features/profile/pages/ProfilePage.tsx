@@ -14,13 +14,23 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
-import { ThemeToggle } from '@/components/ui/theme-toggle';
 import { IssueCard } from '@/components/shared/IssueCard';
-import { MOCK_USER, MOCK_BADGES, MOCK_ISSUES } from '@/data/mock-data';
+import { Skeleton } from '@/components/ui/skeleton';
+import { BADGES } from '@/lib/constants';
+
+import { useUser } from '@/hooks/data/useUser';
+import { useIssues } from '@/hooks/data/useIssues';
 
 export default function ProfilePage() {
-  const myReports = MOCK_ISSUES.filter((i) => i.reporterId === MOCK_USER.uid);
-  const earnedBadges = MOCK_BADGES.filter((b) => MOCK_USER.badges.includes(b.id));
+  const { user, loading: userLoading } = useUser();
+  const { issues, loading: issuesLoading } = useIssues(
+    user ? { reporterId: user.uid } : undefined,
+    10
+  );
+
+  const earnedBadges = BADGES.filter((b) => user?.badges?.includes(b.id));
+  const displayName = user?.displayName || 'Citizen';
+  const email = user?.email || '';
 
   return (
     <AppLayout>
@@ -43,18 +53,18 @@ export default function ProfilePage() {
         <div className="flex flex-col items-center text-center">
           <Avatar className="size-20">
             <AvatarFallback className="bg-primary/15 text-2xl text-primary">
-              {MOCK_USER.displayName.slice(0, 2)}
+              {displayName.slice(0, 2).toUpperCase()}
             </AvatarFallback>
           </Avatar>
-          <h2 className="mt-3 text-xl font-bold">{MOCK_USER.displayName}</h2>
-          <p className="text-sm text-muted-foreground">{MOCK_USER.email}</p>
+          <h2 className="mt-3 text-xl font-bold">{displayName}</h2>
+          <p className="text-sm text-muted-foreground">{email}</p>
           <div className="mt-3 flex gap-2">
             <Badge variant="secondary">
               <Trophy className="mr-1 size-3" aria-hidden="true" />
-              {MOCK_USER.reputation.toLocaleString()} pts
+              {userLoading ? '-' : (user?.reputation?.toLocaleString() ?? 0)} pts
             </Badge>
             <Badge variant="secondary">
-              🔥 {MOCK_USER.streakDays}-day streak
+              🔥 {userLoading ? '-' : (user?.streakDays ?? 0)}-day streak
             </Badge>
           </div>
         </div>
@@ -62,19 +72,19 @@ export default function ProfilePage() {
         <div className="grid grid-cols-3 gap-3 text-center">
           <Card>
             <CardContent className="p-3">
-              <p className="text-xl font-bold">{MOCK_USER.issuesReported}</p>
+              <p className="text-xl font-bold">{userLoading ? '-' : (user?.issuesReported ?? 0)}</p>
               <p className="text-xs text-muted-foreground">Reports</p>
             </CardContent>
           </Card>
           <Card>
             <CardContent className="p-3">
-              <p className="text-xl font-bold">{MOCK_USER.issuesVerified}</p>
+              <p className="text-xl font-bold">{userLoading ? '-' : (user?.issuesVerified ?? 0)}</p>
               <p className="text-xs text-muted-foreground">Verified</p>
             </CardContent>
           </Card>
           <Card>
             <CardContent className="p-3">
-              <p className="text-xl font-bold">{earnedBadges.length}</p>
+              <p className="text-xl font-bold">{userLoading ? '-' : earnedBadges.length}</p>
               <p className="text-xs text-muted-foreground">Badges</p>
             </CardContent>
           </Card>
@@ -97,6 +107,9 @@ export default function ProfilePage() {
                 <p className="mt-1 text-xs font-medium">{badge.name}</p>
               </div>
             ))}
+            {earnedBadges.length === 0 && !userLoading && (
+              <p className="text-sm text-muted-foreground">No badges earned yet.</p>
+            )}
           </div>
         </section>
 
@@ -110,9 +123,14 @@ export default function ProfilePage() {
               View all
             </Link>
           </div>
-          {myReports.length > 0 ? (
+          {issuesLoading ? (
             <div className="space-y-3">
-              {myReports.map((issue) => (
+              <Skeleton className="h-24 w-full rounded-xl" />
+              <Skeleton className="h-24 w-full rounded-xl" />
+            </div>
+          ) : issues.length > 0 ? (
+            <div className="space-y-3">
+              {issues.map((issue) => (
                 <IssueCard key={issue.id} issue={issue} variant="horizontal" />
               ))}
             </div>

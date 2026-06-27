@@ -10,15 +10,17 @@ import {
   Sparkles,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
-import type { NotificationType } from '@blockseblock/shared';
+import type { NotificationType, Notification } from '@blockseblock/shared';
 import { AppLayout, PageHeader } from '@/components/layout/AppLayout';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { EmptyState } from '@/components/ui/empty-state';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { MOCK_NOTIFICATIONS, formatRelativeTime } from '@/data/mock-data';
+import { formatRelativeTime } from '@/lib/constants';
 import { cn } from '@/lib/utils';
+import { useNotifications } from '@/hooks/data/useNotifications';
+import { NotificationService } from '@/services/notification.service';
+import { useAuth } from '@/hooks/useAuth';
 
 const TYPE_ICONS: Record<NotificationType, LucideIcon> = {
   issue_update: AlertCircle,
@@ -33,16 +35,16 @@ const TYPE_ICONS: Record<NotificationType, LucideIcon> = {
 
 type Filter = 'all' | 'unread';
 
-function groupByDate(notifications: typeof MOCK_NOTIFICATIONS) {
+function groupByDate(notifications: (Notification & { id: string })[]) {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
   const yesterday = new Date(today);
   yesterday.setDate(yesterday.getDate() - 1);
 
-  const groups: { label: string; items: typeof MOCK_NOTIFICATIONS }[] = [];
-  const todayItems: typeof MOCK_NOTIFICATIONS = [];
-  const yesterdayItems: typeof MOCK_NOTIFICATIONS = [];
-  const olderItems: typeof MOCK_NOTIFICATIONS = [];
+  const groups: { label: string; items: (Notification & { id: string })[] }[] = [];
+  const todayItems: (Notification & { id: string })[] = [];
+  const yesterdayItems: (Notification & { id: string })[] = [];
+  const olderItems: (Notification & { id: string })[] = [];
 
   for (const n of notifications) {
     const d = new Date(String(n.createdAt));
@@ -59,9 +61,9 @@ function groupByDate(notifications: typeof MOCK_NOTIFICATIONS) {
 
 export default function NotificationsPage() {
   const [filter, setFilter] = useState<Filter>('all');
-  const [loading, setLoading] = useState(false);
-  const [items, setItems] = useState(MOCK_NOTIFICATIONS);
   const [page, setPage] = useState(1);
+  const { user } = useAuth();
+  const { notifications: items, unreadCount, loading } = useNotifications();
 
   const filtered = useMemo(
     () => (filter === 'unread' ? items.filter((n) => !n.read) : items),
@@ -71,23 +73,21 @@ export default function NotificationsPage() {
   const groups = groupByDate(filtered.slice(0, page * 5));
   const hasMore = filtered.length > page * 5;
 
-  const markAllRead = () => {
-    setItems((prev) => prev.map((n) => ({ ...n, read: true })));
+  const markAllRead = async () => {
+    if (user) {
+      await NotificationService.markAllAsRead(user.uid);
+    }
   };
 
   const refresh = useCallback(() => {
-    setLoading(true);
-    setTimeout(() => {
-      setLoading(false);
-      setPage(1);
-    }, 800);
+    setPage(1);
   }, []);
 
   return (
     <AppLayout>
       <PageHeader
         title="Notifications"
-        subtitle={`${items.filter((n) => !n.read).length} unread`}
+        subtitle={`${unreadCount} unread`}
         action={
           <Button variant="ghost" size="sm" onClick={markAllRead}>
             <CheckCheck className="size-4" aria-hidden="true" />
@@ -137,7 +137,7 @@ export default function NotificationsPage() {
                 <div className="space-y-2">
                   {group.items.map((n, i) => {
                     const Icon = TYPE_ICONS[n.type];
-                    const issueId = n.data.issueId as string | undefined;
+                    const issueId = n.data?.issueId as string | undefined;
                     return (
                       <motion.div
                         key={`${n.title}-${i}`}
@@ -153,6 +153,9 @@ export default function NotificationsPage() {
                               ? 'border-primary/20 bg-primary/5'
                               : 'border-border/50 bg-card',
                           )}
+                          onClick={() => {
+                            if (!n.read) NotificationService.markAsRead(n.id);
+                          }}
                         >
                           <div
                             className={cn(

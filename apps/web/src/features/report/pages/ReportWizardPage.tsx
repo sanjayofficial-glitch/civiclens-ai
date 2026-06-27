@@ -19,8 +19,11 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Card, CardContent } from '@/components/ui/card';
-import { CATEGORY_OPTIONS, SEVERITY_OPTIONS } from '@/data/mock-data';
+import { CATEGORY_OPTIONS, SEVERITY_OPTIONS } from '@/lib/constants';
 import type { IssueCategory, IssueSeverity } from '@blockseblock/shared';
+import { IssueService } from '@/services/issue.service';
+import { useAuth } from '@/hooks/useAuth';
+import { GeoPoint } from 'firebase/firestore';
 
 const STEPS = [
   { id: 'camera', label: 'Camera', icon: Camera },
@@ -71,6 +74,7 @@ function loadDraft(): ReportDraft {
 
 export default function ReportWizardPage() {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [draft, setDraft] = useState<ReportDraft>(loadDraft);
   const [aiLoading, setAiLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -118,13 +122,38 @@ export default function ReportWizardPage() {
     else navigate(-1);
   };
 
-  const submit = () => {
+  const submit = async () => {
+    if (!user) return; // Need to be logged in
     setSubmitting(true);
-    setTimeout(() => {
+    
+    try {
+      await IssueService.create({
+        title: draft.title || 'Untitled Report',
+        description: draft.description,
+        category: draft.category,
+        severity: draft.severity,
+        status: 'reported',
+        location: {
+          geopoint: new GeoPoint(40.7128, -74.006), // Use mock point for now, normally use device location
+          address: draft.address || 'Unknown address',
+        },
+        reporterId: user.uid,
+        media: {
+          images: draft.photos,
+        },
+        verification: {
+          upvotes: 0,
+          downvotes: 0,
+          verifiedBy: [],
+        },
+      });
       localStorage.removeItem(DRAFT_KEY);
-      setSubmitting(false);
       navigate('/home');
-    }, 1200);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   const addMockPhoto = () => {

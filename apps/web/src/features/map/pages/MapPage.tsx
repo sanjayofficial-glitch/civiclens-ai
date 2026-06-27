@@ -14,9 +14,10 @@ import { BottomSheet } from '@/components/ui/bottom-sheet';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { IssueCard } from '@/components/shared/IssueCard';
-import { MOCK_ISSUES, ISSUE_FILTERS } from '@/data/mock-data';
+import { ISSUE_FILTERS } from '@/lib/constants';
 import { getStatusMeta } from '@/lib/issue-meta';
 import type { IssueStatus } from '@blockseblock/shared';
+import { useIssues } from '@/hooks/data/useIssues';
 import 'leaflet/dist/leaflet.css';
 
 const DEFAULT_CENTER: [number, number] = [40.7128, -74.006];
@@ -52,19 +53,12 @@ function LocateButton() {
 
 export default function MapPage() {
   const [statusFilter, setStatusFilter] = useState<IssueStatus | 'all'>('all');
+  const { issues, loading } = useIssues(statusFilter !== 'all' ? { status: statusFilter } : undefined, 100);
   const [showHeatmap, setShowHeatmap] = useState(false);
   const [filterOpen, setFilterOpen] = useState(false);
   const [selectedId, setSelectedId] = useState<string | null>(null);
 
-  const filtered = useMemo(
-    () =>
-      statusFilter === 'all'
-        ? MOCK_ISSUES
-        : MOCK_ISSUES.filter((i) => i.status === statusFilter),
-    [statusFilter],
-  );
-
-  const selected = filtered.find((i) => i.id === selectedId);
+  const selected = issues.find((i) => i.id === selectedId);
 
   return (
     <AppLayout className="relative !pb-0">
@@ -80,7 +74,7 @@ export default function MapPage() {
             url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
           />
           <MarkerClusterGroup chunkedLoading>
-            {filtered.map((issue) => (
+            {issues.map((issue) => (
               <Marker
                 key={issue.id}
                 position={[
@@ -119,7 +113,7 @@ export default function MapPage() {
           <div className="glass flex-1 rounded-xl border border-border/50 px-3 py-2">
             <p className="text-sm font-medium">Interactive Map</p>
             <p className="text-xs text-muted-foreground">
-              {filtered.length} issues · OpenStreetMap
+              {loading ? 'Loading...' : `${issues.length} issues · OpenStreetMap`}
             </p>
           </div>
         </div>
