@@ -96,6 +96,8 @@ Route protection uses a `ProtectedRoute` component with role-based access:
 | `leaderboard` | User scores | period+score |
 | `notifications` | User notifications | - |
 
+> **NOTE**: This doc covers the high-level architecture. For comprehensive details including all implemented features, Cloud Functions, schemas, and conventions, see `AGENTS.md` at the project root — the single source of truth.
+
 ## Evidence
 
 - `apps/web/src/routes.tsx` — routing architecture

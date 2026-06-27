@@ -51,6 +51,8 @@
 | Monorepo | Turborepo ^2.3.3 |
 | CI/CD | GitHub Actions (detected in .github/) |
 
+> **NOTE**: This doc covers the technology stack. For complete project context including all implemented features and architecture, see `AGENTS.md` at the project root — the single source of truth.
+
 ## Evidence
 
 - `package.json` (root) — workspaces, devDependencies, engines

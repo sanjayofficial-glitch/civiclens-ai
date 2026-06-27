@@ -1,5 +1,8 @@
 # Concerns
 
+> **NOTE**: This doc was originally written during initial scaffolding. Many listed concerns are now resolved.
+> See `AGENTS.md` at the project root for the single source of truth on current state.
+
 ## Tech Debt
 
 ### 1. Missing Test Infrastructure
@@ -8,21 +11,13 @@
 - **Location**: All packages
 - **Recommendation**: Add Vitest + testing-library for web, firebase-functions-test for backend
 
-### 2. Incomplete Cloud Functions
-- **Severity**: Medium
-- **Impact**: Backend features marked "Codex will implement"
-- **Location**: `apps/functions/src/callables/updateLeaderboard.ts`, `apps/functions/src/triggers/onIssueCreated.ts`
-- **Details**: 
-  - `updateLeaderboard` — placeholder, no actual leaderboard logic
-  - `onIssueCreated` — placeholder, no AI analysis or duplicate detection
-
-### 3. Default App.tsx Not Replaced
+### 2. Default App.tsx Not Replaced
 - **Severity**: Low
 - **Impact**: Confusing entry point
 - **Location**: `apps/web/src/App.tsx`
 - **Details**: Contains Vite template code, not used (main.tsx uses routes.tsx directly)
 
-### 4. Type Version Mismatch
+### 3. Type Version Mismatch
 - **Severity**: Low
 - **Impact**: Potential compatibility issues
 - **Location**: Root vs package TypeScript versions
@@ -36,15 +31,6 @@
 - **Location**: `apps/web/.env.development`
 - **Details**: `VITE_UI_DEV_MODE=true` bypasses Firebase auth guards
 - **Mitigation**: Ensure this is `false` in production
-
-### 2. Firestore Rules Coverage
-- **Severity**: Medium
-- **Impact**: Incomplete security rules
-- **Location**: `firestore.rules`
-- **Details**: 
-  - `issues` collection not explicitly secured (uses `entities` placeholder)
-  - `votes`, `notifications`, `leaderboard` collections not covered
-  - `comments` collection not covered
 
 ## Performance Considerations
 
@@ -61,23 +47,6 @@
 - **Location**: `apps/web/src/services/issue.service.ts`
 - **Details**: `listenToIssue` returns unsubscribe function, must be called on unmount
 
-## Missing Features (from schemas)
-
-### 1. Comment System
-- **Severity**: Medium
-- **Impact**: No way to discuss issues
-- **Location**: `packages/shared/src/schemas/comment.ts` exists, no UI implementation
-
-### 2. Vote System
-- **Severity**: Medium
-- **Impact**: No community verification
-- **Location**: `packages/shared/src/schemas/vote.ts` exists, no UI implementation
-
-### 3. Notification System
-- **Severity**: Medium
-- **Impact**: No user alerts
-- **Location**: `packages/shared/src/schemas/notification.ts` exists, `NotificationsPage` exists but implementation unknown
-
 ## Code Quality
 
 ### 1. No Linting for Functions
@@ -92,11 +61,20 @@
 - **Location**: `apps/functions/src/`
 - **Details**: Uses `../index` style imports instead of aliases
 
+## Previously Resolved Items
+
+The following were listed as concerns in earlier versions but are now **fully implemented**:
+
+| Item | Resolution |
+|------|-----------|
+| `onIssueCreated` trigger | Fully implemented with AI enrichment (Gemini), duplicate detection, reputation +10, and duplicate notifications |
+| `updateLeaderboard` callable | Fully implemented with Zod validation, auth checks, and actual `rebuildLeaderboard()` logic |
+| Comment system | UI, service, hook, Cloud Function (`addComment`), and trigger (`onCommentCreated`) all implemented |
+| Vote system | UI, service, hook, Cloud Function (`submitVote`), and trigger (`onVoteCreated`) all implemented with Firestore transactions |
+| Notification system | UI (grouped by date, mark read, filter), service with real-time listener, Cloud Function trigger all implemented |
+| Firestore rules | All collections (users, issues, votes, comments, notifications, leaderboard, analytics, badges) are secured with role-based rules |
+
 ## Evidence
 
-- `apps/functions/src/callables/updateLeaderboard.ts` — placeholder implementation
-- `apps/functions/src/triggers/onIssueCreated.ts` — placeholder implementation
 - `apps/web/src/App.tsx` — unused Vite template
 - `apps/web/.env.development` — UI dev mode flag
-- `firestore.rules` — incomplete rules
-- `packages/shared/src/schemas/*.ts` — unused schema definitions
