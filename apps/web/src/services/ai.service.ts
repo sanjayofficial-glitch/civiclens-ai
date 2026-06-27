@@ -1,7 +1,6 @@
 import { GoogleGenAI, Type, Schema } from '@google/genai';
 import type { IssueAiAnalysis } from '@blockseblock/shared';
 
-const ai = new GoogleGenAI({ apiKey: import.meta.env.VITE_GEMINI_API_KEY });
 
 const analysisSchema: Schema = {
   type: Type.OBJECT,
@@ -46,6 +45,8 @@ export const AiService = {
     if (!import.meta.env.VITE_GEMINI_API_KEY) {
       throw new Error("Missing VITE_GEMINI_API_KEY in environment. Please add it to your .env.local file.");
     }
+
+    const ai = new GoogleGenAI({ apiKey: import.meta.env.VITE_GEMINI_API_KEY });
 
     const response = await ai.models.generateContent({
       model: 'gemini-2.5-flash',
