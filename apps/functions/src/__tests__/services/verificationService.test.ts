@@ -105,7 +105,7 @@ describe('registerVote', () => {
     };
 
     mockRunTransaction.mockImplementationOnce(async (cb: (t: typeof tx) => Promise<void>) => {
-      await expect(cb(tx)).rejects.toThrow('Issue not found.');
+      await cb(tx);
     });
 
     await expect(registerVote(input)).rejects.toThrow('Issue not found.');
@@ -123,7 +123,7 @@ describe('registerVote', () => {
     };
 
     mockRunTransaction.mockImplementationOnce(async (cb: (t: typeof tx) => Promise<void>) => {
-      await expect(cb(tx)).rejects.toThrow('Duplicate vote.');
+      await cb(tx);
     });
 
     await expect(registerVote(input)).rejects.toThrow('Duplicate vote.');

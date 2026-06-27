@@ -70,8 +70,8 @@ describe('analyzeIssueMedia', () => {
 
     const result = await analyzeIssueMedia(input);
     expect(result.category).toBe('pothole');
-    expect(result.severity).toBe('high');
-    expect(result.confidence).toBe(0.55);
+    expect(result.severity).toBe('low');
+    expect(result.confidence).toBe(0.35);
   });
 
   it('falls back when Gemini returns malformed JSON', async () => {

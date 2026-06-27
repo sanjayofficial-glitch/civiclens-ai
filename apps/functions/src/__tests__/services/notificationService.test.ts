@@ -4,10 +4,12 @@ const { mockCreate, mockDocUpdate, mockDoc, mockNotificationRepoImpl, mockServer
   const mockCreate = vi.fn();
   const mockDocUpdate = vi.fn();
   const mockDoc = vi.fn(() => ({ update: mockDocUpdate }));
-  const mockNotificationRepoImpl = vi.fn(() => ({
-    create: mockCreate,
-    doc: mockDoc,
-  }));
+  const mockNotificationRepoImpl = vi.fn(function() {
+    return {
+      create: mockCreate,
+      doc: mockDoc,
+    };
+  });
   const mockServerTimestamp = vi.fn(() => ({ _method: 'serverTimestamp' }));
   return { mockCreate, mockDocUpdate, mockDoc, mockNotificationRepoImpl, mockServerTimestamp };
 });
