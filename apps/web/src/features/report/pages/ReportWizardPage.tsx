@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
+import 'leaflet/dist/leaflet.css';
 import {
   Camera,
   ImagePlus,
@@ -11,7 +12,11 @@ import {
   CheckCircle2,
   ChevronLeft,
   ChevronRight,
+  Crosshair,
+  Search,
 } from 'lucide-react';
+import { MapContainer, TileLayer, Marker, useMapEvents, useMap } from 'react-leaflet';
+import L from 'leaflet';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
@@ -27,6 +32,18 @@ import { useAuth } from '@/hooks/useAuth';
 import { GeoPoint } from 'firebase/firestore';
 import { UploadService } from '@/services/upload.service';
 import { AiService } from '@/services/ai.service';
+import { GeolocationService } from '@/services/geolocation.service';
+
+// Default center: New York City
+const DEFAULT_CENTER: [number, number] = [40.7128, -74.006];
+const DEFAULT_ZOOM = 14;
+
+const pinIcon = L.divIcon({
+  className: '',
+  html: `<div style="width:28px;height:28px;background:var(--primary,#aa3bff);border:3px solid white;border-radius:50%;box-shadow:0 2px 8px rgba(0,0,0,0.3)"></div>`,
+  iconSize: [28, 28],
+  iconAnchor: [14, 14],
+});
 
 const STEPS = [
   { id: 'camera', label: 'Camera', icon: Camera },
@@ -43,6 +60,8 @@ interface ReportDraft {
   step: number;
   photos: string[];
   address: string;
+  latitude: number;
+  longitude: number;
   title: string;
   description: string;
   category: IssueCategory;
@@ -54,6 +73,8 @@ const defaultDraft: ReportDraft = {
   step: 0,
   photos: [],
   address: '',
+  latitude: DEFAULT_CENTER[0],
+  longitude: DEFAULT_CENTER[1],
   title: '',
   description: '',
   category: 'pothole',
@@ -169,6 +190,7 @@ export default function ReportWizardPage() {
     setSubmitting(true);
     
     try {
+      const geohash = draft.latitude.toFixed(5) + ',' + draft.longitude.toFixed(5);
       await IssueService.create({
         title: draft.title || 'Untitled Report',
         description: draft.description,
@@ -176,8 +198,8 @@ export default function ReportWizardPage() {
         severity: draft.severity,
         status: 'reported',
         location: {
-          geohash: 'dr5reg', // Mock geohash
-          geopoint: new GeoPoint(40.7128, -74.006), // Use mock point for now, normally use device location
+          geohash,
+          geopoint: new GeoPoint(draft.latitude, draft.longitude),
           address: draft.address || 'Unknown address',
         },
         reporterId: user.uid,
@@ -206,6 +228,7 @@ export default function ReportWizardPage() {
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const galleryInputRef = useRef<HTMLInputElement>(null);
+  const searchTimeoutRef = useRef<ReturnType<typeof setTimeout>>();
 
   const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
     // Camera step uses a FileReader/DataURL path; just pass through
@@ -226,6 +249,84 @@ export default function ReportWizardPage() {
     // Reset so the same file(s) can be re-selected after removal
     event.target.value = '';
   };
+
+  const handleUseCurrentLocation = async () => {
+    try {
+      const position = await GeolocationService.getCurrentPosition();
+      const { latitude, longitude } = position.coords;
+      update({ latitude, longitude });
+      // Reverse geocode the coordinates to get the address
+      reverseGeocode(latitude, longitude).then((addr) => {
+        if (addr) update({ address: addr });
+      });
+      toast.success('Location found');
+    } catch {
+      toast.error('Could not get your location. Check your browser permissions.');
+    }
+  };
+
+  const handleAddressSearch = async (value: string) => {
+    update({ address: value });
+    if (value.length < 3) return;
+    // Debounced geocoding search
+    try {
+      const res = await fetch(
+        `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(value)}&limit=1`,
+        { headers: { 'Accept-Language': 'en' } },
+      );
+      const data = await res.json() as Array<{ lat: string; lon: string; display_name: string }>;
+      if (data.length > 0) {
+        update({
+          latitude: parseFloat(data[0].lat),
+          longitude: parseFloat(data[0].lon),
+          address: data[0].display_name,
+        });
+      }
+    } catch {
+      // Silent fail — user-entered address text is still kept
+    }
+  };
+
+  const onAddressChange = useCallback((value: string) => {
+    clearTimeout(searchTimeoutRef.current);
+    searchTimeoutRef.current = setTimeout(() => handleAddressSearch(value), 600);
+  }, []);
+
+  const reverseGeocode = async (lat: number, lng: number): Promise<string | null> => {
+    try {
+      const res = await fetch(
+        `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&addressdetails=1`,
+        { headers: { 'Accept-Language': 'en' } },
+      );
+      const data = await res.json() as { display_name?: string };
+      return data.display_name ?? null;
+    } catch {
+      return null;
+    }
+  };
+
+  /** Inner component that listens for map clicks and places a pin */
+  function MapClickHandler() {
+    useMapEvents({
+      click(e) {
+        const { lat, lng } = e.latlng;
+        update({ latitude: lat, longitude: lng });
+        reverseGeocode(lat, lng).then((addr) => {
+          if (addr) update({ address: addr });
+        });
+      },
+    });
+    return null;
+  }
+
+  /** Inner component that updates the map view when coordinates change externally */
+  function MapUpdater({ center }: { center: [number, number] }) {
+    const map = useMap();
+    useEffect(() => {
+      map.flyTo(center, map.getZoom(), { duration: 0.5 });
+    }, [center[0], center[1], map]);
+    return null;
+  }
 
   return (
     <AppLayout hideNav>
@@ -360,24 +461,43 @@ export default function ReportWizardPage() {
 
           {step === 2 && (
             <div className="space-y-4">
-              <div className="glass aspect-video rounded-2xl border border-border/50 bg-muted/30">
-                <div className="flex size-full flex-col items-center justify-center">
-                  <MapPin className="mb-2 size-10 text-primary" aria-hidden="true" />
-                  <p className="text-sm font-medium">Pin Location</p>
-                  <p className="text-xs text-muted-foreground">Drag to adjust</p>
-                </div>
+              <div className="overflow-hidden rounded-2xl border border-border/50">
+                <MapContainer
+                  center={[draft.latitude, draft.longitude]}
+                  zoom={DEFAULT_ZOOM}
+                  className="h-64 w-full"
+                  zoomControl={false}
+                >
+                  <TileLayer
+                    attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+                    url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                  />
+                  <Marker
+                    position={[draft.latitude, draft.longitude]}
+                    icon={pinIcon}
+                  />
+                  <MapClickHandler />
+                  <MapUpdater center={[draft.latitude, draft.longitude]} />
+                </MapContainer>
               </div>
               <div className="space-y-2">
                 <Label htmlFor="address">Address</Label>
-                <Input
-                  id="address"
-                  placeholder="123 Main St, Downtown"
-                  value={draft.address}
-                  onChange={(e) => update({ address: e.target.value })}
-                />
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+                  <Input
+                    id="address"
+                    placeholder="Search address or click the map..."
+                    className="pl-10"
+                    value={draft.address}
+                    onChange={(e) => onAddressChange(e.target.value)}
+                  />
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Click the map to place a pin, or search for an address.
+                </p>
               </div>
-              <Button variant="outline" fullWidth>
-                <MapPin className="size-4" aria-hidden="true" />
+              <Button variant="outline" fullWidth onClick={handleUseCurrentLocation}>
+                <Crosshair className="size-4" aria-hidden="true" />
                 Use Current Location
               </Button>
             </div>
