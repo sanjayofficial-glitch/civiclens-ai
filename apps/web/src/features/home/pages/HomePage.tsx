@@ -10,6 +10,9 @@ import {
   FileText,
   CheckCircle,
 } from 'lucide-react';
+
+const recentActivityIcons = [CheckCircle, Activity, Trophy] as const;
+const recentActivityColors = ['text-success', 'text-info', 'text-warning'] as const;
 import { AppLayout, PageHeader } from '@/components/layout/AppLayout';
 import { NotificationBellLink } from '@/components/layout/BottomNav';
 import { SearchInput } from '@/components/ui/search-input';
@@ -70,8 +73,6 @@ export default function HomePage() {
     [issues],
   );
 
-  const recentActivityIcons = [CheckCircle, Activity, Trophy] as const;
-  const recentActivityColors = ['text-success', 'text-info', 'text-warning'] as const;
   const recentActivity = useMemo(
     () =>
       issues.slice(0, 3).map((issue, i) => ({

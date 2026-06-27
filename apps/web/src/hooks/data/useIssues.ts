@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { IssueService, type IssueFilters } from '../../services/issue.service';
 import type { Issue } from '@blockseblock/shared';
 import { DocumentSnapshot } from 'firebase/firestore';
@@ -61,6 +61,8 @@ export const useIssuesPaginated = (filters?: IssueFilters, pageSize = 10) => {
   const [hasMore, setHasMore] = useState(true);
   const [lastDoc, setLastDoc] = useState<DocumentSnapshot | undefined>(undefined);
 
+  const filtersKey = filters ? JSON.stringify(filters) : 'all';
+
   const fetchIssues = useCallback(async (isNextPage = false) => {
     try {
       setLoading(true);
@@ -74,11 +76,12 @@ export const useIssuesPaginated = (filters?: IssueFilters, pageSize = 10) => {
     } finally {
       setLoading(false);
     }
-  }, [JSON.stringify(filters), pageSize, lastDoc]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [filtersKey, pageSize, lastDoc]);
 
   useEffect(() => {
     fetchIssues();
-  }, [JSON.stringify(filters), pageSize]);
+  }, [fetchIssues]);
 
   return { issues, loading, hasMore, loadMore: () => fetchIssues(true) };
 };

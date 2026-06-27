@@ -263,7 +263,7 @@ export default function ReportWizardPage() {
     }
   };
 
-  const handleAddressSearch = async (value: string) => {
+  const handleAddressSearch = useCallback(async (value: string) => {
     update({ address: value });
     if (value.length < 3) return;
     // Debounced geocoding search
@@ -283,12 +283,12 @@ export default function ReportWizardPage() {
     } catch {
       // Silent fail — user-entered address text is still kept
     }
-  };
+  }, [update]);
 
   const onAddressChange = useCallback((value: string) => {
     clearTimeout(searchTimeoutRef.current);
     searchTimeoutRef.current = setTimeout(() => handleAddressSearch(value), 600);
-  }, []);
+  }, [handleAddressSearch]);
 
   const reverseGeocode = async (lat: number, lng: number): Promise<string | null> => {
     try {
@@ -322,7 +322,7 @@ export default function ReportWizardPage() {
     const map = useMap();
     useEffect(() => {
       map.flyTo(center, map.getZoom(), { duration: 0.5 });
-    }, [center[0], center[1], map]);
+    }, [center, map]);
     return null;
   }
 

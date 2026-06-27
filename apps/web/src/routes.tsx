@@ -26,6 +26,7 @@ function Lazy({ children }: { children: React.ReactNode }) {
   return <Suspense fallback={<PageLoader />}>{children}</Suspense>;
 }
 
+// eslint-disable-next-line react/only-export-components
 export const router = createBrowserRouter([
   {
     path: '/',

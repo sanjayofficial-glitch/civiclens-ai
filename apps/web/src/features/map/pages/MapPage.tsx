@@ -6,7 +6,6 @@ import L from 'leaflet';
 import {
   Crosshair,
   Filter,
-  Layers,
   Flame,
   Satellite,
   Map as MapIcon,
@@ -97,7 +96,6 @@ export default function MapPage() {
   const [showHeatmap, setShowHeatmap] = useState(false);
   const [mapLayer, setMapLayer] = useState<MapLayer>('street');
   const [filterOpen, setFilterOpen] = useState(false);
-  const [layerOpen, setLayerOpen] = useState(false);
   const [selectedId, setSelectedId] = useState<string | null>(null);
 
   const validIssues = issues.filter(

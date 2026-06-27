@@ -4,7 +4,7 @@ export const PermissionsService = {
       const stream = await navigator.mediaDevices.getUserMedia({ video: true });
       stream.getTracks().forEach(track => track.stop()); // Stop immediately, just testing permission
       return true;
-    } catch (e) {
+    } catch {
       return false;
     }
   },
@@ -13,7 +13,7 @@ export const PermissionsService = {
     try {
       const result = await navigator.permissions.query({ name: 'geolocation' });
       return result.state === 'granted' || result.state === 'prompt';
-    } catch (e) {
+    } catch {
       return false;
     }
   }

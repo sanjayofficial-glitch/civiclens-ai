@@ -1,4 +1,4 @@
-import { collection, doc, query, where, onSnapshot, getDocs, setDoc, getDoc } from 'firebase/firestore';
+import { doc, getDoc } from 'firebase/firestore';
 import { db, runTransaction } from '../lib/firebase/firestore.service';
 import type { Vote, VoteType } from '@blockseblock/shared';
 import { voteConverter } from './converters';

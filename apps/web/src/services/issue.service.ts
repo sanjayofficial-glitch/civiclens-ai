@@ -1,4 +1,4 @@
-import { collection, doc, addDoc, getDoc, updateDoc, deleteDoc, query, where, orderBy, limit, startAfter, onSnapshot, getDocs, QueryConstraint, DocumentSnapshot, increment, runTransaction } from 'firebase/firestore';
+import { collection, doc, addDoc, getDoc, updateDoc, deleteDoc, query, where, orderBy, limit, startAfter, onSnapshot, getDocs, QueryConstraint, DocumentSnapshot, increment } from 'firebase/firestore';
 import { db } from '../lib/firebase/firestore.service';
 import type { Issue, IssueStatus, IssueCategory, IssueSeverity } from '@blockseblock/shared';
 import { issueConverter } from './converters';

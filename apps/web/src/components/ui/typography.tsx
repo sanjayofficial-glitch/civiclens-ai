@@ -11,6 +11,7 @@ function createTypography<T extends React.ElementType>(
   defaultTag: T,
   baseClass: string,
 ) {
+  // eslint-disable-next-line react/only-export-components
   return function Typography({
     as,
     className,

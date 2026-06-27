@@ -6,7 +6,7 @@ function createConverter<T extends { id?: string; uid?: string }>(): FirestoreDa
   return {
     toFirestore(modelObject: T): DocumentData {
       // Remove id/uid from the data payload as it's the document ID itself
-      const { id, uid, ...data } = modelObject as any;
+      const { id: _id, uid: _uid, ...data } = modelObject as any;
       return data;
     },
     fromFirestore(
