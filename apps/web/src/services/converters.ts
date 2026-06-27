@@ -1,4 +1,4 @@
-import { DocumentData, FirestoreDataConverter, QueryDocumentSnapshot, SnapshotOptions } from 'firebase/firestore';
+import type { DocumentData, FirestoreDataConverter, QueryDocumentSnapshot, SnapshotOptions } from 'firebase/firestore';
 import type { Issue, User, Comment, Vote, Notification, LeaderboardEntry } from '@blockseblock/shared';
 
 // Generic converter creator
