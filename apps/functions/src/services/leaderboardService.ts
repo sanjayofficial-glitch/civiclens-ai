@@ -30,7 +30,7 @@ export async function rebuildLeaderboard(
     const data = doc.data() as Record<string, unknown>;
     // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
     const createdAt =
-      (data.createdAt as Record<string, unknown> | undefined)?.toDate?.() ??
+      (data.createdAt as { toDate?: () => Date } | undefined)?.toDate?.() ??
       new Date(0);
     if (createdAt < start && period !== 'all_time') {
       return;

@@ -1,7 +1,7 @@
 export const REGION = 'us-central1';
 
 export const GEMINI_MODEL =
-  process.env.GEMINI_MODEL?.trim() ?? 'gemini-1.5-flash';
+  process.env.GEMINI_MODEL?.trim() ?? 'gemini-2.5-flash';
 
 export const GEMINI_TIMEOUT_MS = Number(
   process.env.GEMINI_TIMEOUT_MS ?? 20_000,
