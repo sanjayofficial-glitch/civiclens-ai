@@ -44,7 +44,7 @@ export default function LoginPage() {
       >
         <div className="mb-6 text-center">
           <H2>Sign In</H2>
-          <Muted className="mt-1">Welcome back to BlockSeBlock</Muted>
+          <Muted className="mt-1">Welcome back to Civic Lens</Muted>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">

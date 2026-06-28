@@ -109,7 +109,7 @@ export default function SettingsPage() {
           <div className="flex items-center gap-3 rounded-xl border border-border/50 p-4">
             <Shield className="size-5 text-primary" aria-hidden="true" />
             <div>
-              <p className="text-sm font-medium">BlockSeBlock v0.1.0</p>
+              <p className="text-sm font-medium">Civic Lens v0.1.0</p>
               <p className="text-xs text-muted-foreground">
                 AI-powered civic issue reporting
               </p>

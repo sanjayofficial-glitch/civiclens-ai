@@ -1,4 +1,4 @@
-export const APP_NAME = 'blockseblock' as const;
+export const APP_NAME = 'Civic Lens' as const;
 
 export const FIREBASE_REGION = 'us-central1' as const;
 

@@ -24,7 +24,7 @@ export default function SplashPage() {
           <Shield className="size-12 text-indigo-500" aria-hidden="true" />
         </div>
         <H1 className="bg-[image:var(--image-ai-gradient)] bg-clip-text text-transparent tracking-tight">
-          BlockSeBlock
+          Civic Lens
         </H1>
         <Lead className="mt-2 max-w-xs">
           Report civic issues. Build better communities.
