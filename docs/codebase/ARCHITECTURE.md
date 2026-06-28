@@ -35,11 +35,13 @@ BlockSeBlock is a civic issue reporting platform where citizens report urban pro
 ```
 User → ReportWizardPage → IssueService.create() → Firestore
                                                     ↓
-                                          onIssueCreated trigger
-                                                    ↓
-                                          AI Analysis (planned)
-                                                    ↓
-                                          Update issue with analysis
+                                           onIssueCreated trigger
+                                                     ↓
+                                           AI Analysis (Gemini 1.5 Flash)
+                                                     ↓
+                                           Duplicate detection + reputation + notification
+                                                     ↓
+                                           Issue enriched with analysis
 ```
 
 ### Authentication Flow

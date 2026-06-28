@@ -3,7 +3,7 @@
 > **🕐 Last Updated:** 2026-06-28
 > **🧹 Lint Status:** ✅ 0 warnings, 0 errors
 > **🏗️ Build Status:** ✅ Passes cleanly on `npm run build`
-> **🧪 Test Status:** ✅ 21 tests, 4 test files — `vitest run` in `apps/functions`
+> **🧪 Test Status:** ✅ 45 tests, 8 test files — `vitest run` in `apps/functions`
 
 ## Project Overview
 
@@ -82,7 +82,7 @@ Firebase (Firestore + Auth + Storage + Cloud Functions + Hosting)
 
 **Fix:** Changed mock to `await cb(tx)` — letting the error propagate naturally, which matches real Firebase `runTransaction` behavior.
 
-**Current status:** 21 tests, 4 test files, all passing.
+**Current status:** 45 tests, 8 test files, all passing.
 
 ## Session Memory: Build & Lint Fixes (2025-07-17 — same session, continued)
 
@@ -105,8 +105,8 @@ Firebase (Firestore + Auth + Storage + Cloud Functions + Hosting)
 **Fix:** Renamed to `_localPhoto` to match the `varsIgnorePattern: '^_'` convention.
 
 **Remaining:** Functions ESLint OOM is unresolved (pre-existing). Two optional tasks remain:
-1. Remove unused `App.tsx` (Vite template artifact)
-2. Configure a test runner for `apps/functions/src/__tests__/` (contains 4 test files, no runner)
+1. ~~Remove unused `App.tsx` (Vite template artifact)~~ ✅ RESOLVED — deleted in June 2026 cleanup
+2. ~~Configure a test runner for `apps/functions/src/__tests__/`~~ ✅ RESOLVED — vitest 4.1.9 configured; 45 tests in 8 files all pass
 
 ---
 
@@ -660,8 +660,8 @@ All barrel-exported from `index.ts`. Most are thin wrappers around [Radix UI](ht
 
 ## Known Tech Debt (Minor)
 
-1. ~~**No tests** — no test runner configured~~ ✅ Fixed — vitest 4.1.9 configured as test runner; 21 tests in 4 files all pass via `vitest run`
-2. **`App.tsx`** contains unused Vite template code (not imported; `main.tsx` uses `routes.tsx` directly)
+1. ~~**No tests** — no test runner configured~~ ✅ Fixed — vitest 4.1.9 configured as test runner; 45 tests in 8 files all pass via `vitest run`
+2. ~~**`App.tsx`** contains unused Vite template code~~ ✅ RESOLVED — `App.tsx`, `App.css`, `src/assets/` deleted in June 2026 cleanup
 3. **TypeScript version mismatch**: root ^6.0.3, web ~6.0.2, functions ^5.0.0, shared ^5.7.2
 4. **`VITE_UI_DEV_MODE`** flag can bypass Firebase auth in dev
 5. **No linting for functions** (ESLint instead of Oxlint)

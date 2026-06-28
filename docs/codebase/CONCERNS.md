@@ -11,11 +11,8 @@
 - **Location**: All packages
 - **Recommendation**: Add Vitest + testing-library for web, firebase-functions-test for backend
 
-### 2. Default App.tsx Not Replaced
-- **Severity**: Low
-- **Impact**: Confusing entry point
-- **Location**: `apps/web/src/App.tsx`
-- **Details**: Contains Vite template code, not used (main.tsx uses routes.tsx directly)
+### 2. ~~Default App.tsx Not Replaced~~ ✅ RESOLVED
+- **Resolution**: `App.tsx`, `App.css`, and `src/assets/` were deleted in June 2026 cleanup. `main.tsx` uses `routes.tsx` directly.
 
 ### 3. Type Version Mismatch
 - **Severity**: Low
@@ -76,5 +73,5 @@ The following were listed as concerns in earlier versions but are now **fully im
 
 ## Evidence
 
-- `apps/web/src/App.tsx` — unused Vite template
+- ~~`apps/web/src/App.tsx`~~ — deleted (June 2026 cleanup)
 - `apps/web/.env.development` — UI dev mode flag

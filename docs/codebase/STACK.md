@@ -38,7 +38,9 @@
 | Category | Technology | Version |
 |----------|-----------|---------|
 | Validation | Zod | ^3.24.1 |
+| AI SDK | @google/genai | ^2.10.0 |
 | Build | TypeScript | ^5.7.2 |
+| Testing | Vitest | ^4.1.9 |
 
 ## Infrastructure
 

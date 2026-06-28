@@ -62,15 +62,16 @@ import { db } from '../lib/firebase/firestore';
 
 ## Testing
 
-- **Framework**: [TODO] — No test files detected
-- **Location**: [TODO]
-- **Mocking**: [TODO]
+- **Framework**: Vitest 4.1.9
+- **Location**: `apps/functions/src/__tests__/`
+- **Tests**: 45 tests across 8 test files (all passing)
+- **Pattern**: Firestore mocks with regular functions (not arrow functions) for mock constructors; errors propagate naturally in mock transactions
 
 ## Git Workflow
 
-- **Branching**: [TODO]
-- **Commit messages**: [TODO]
-- **PR reviews**: [TODO]
+- **Branching**: Feature branches from main
+- **Commit messages**: Conventional Commits (feat:, fix:, chore:, docs:)
+- **PR reviews**: Via GitHub
 
 ## Evidence
 
