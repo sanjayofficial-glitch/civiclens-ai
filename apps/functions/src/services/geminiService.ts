@@ -2,9 +2,9 @@ import type { IssueAnalysisResult } from '../types';
 
 import { GEMINI_MAX_RETRIES, GEMINI_MODEL, GEMINI_TIMEOUT_MS } from '../config';
 import { fail } from '../lib/errors';
+import { bucket } from '../lib/firebase';
 
 import { fetchFileBuffer } from './storageService';
-import { bucket } from '../lib/firebase';
 
 interface GeminiPart {
   text?: string;
@@ -134,8 +134,8 @@ export async function analyzeIssueMedia(input: {
   for (const url of input.imageUrls.slice(0, 3)) {
     try {
       let buffer: Buffer;
-      const pathMatch = decodeURIComponent(url).match(/\/o\/(.+?)(?:\?|$)/);
-      if (pathMatch && pathMatch[1]) {
+      const pathMatch = /\/o\/(.+?)(?:\?|$)/.exec(decodeURIComponent(url));
+      if (pathMatch?.[1]) {
         const [downloaded] = await bucket.file(pathMatch[1]).download();
         buffer = downloaded;
       } else {

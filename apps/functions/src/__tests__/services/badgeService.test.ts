@@ -4,12 +4,13 @@ const { mockDb } = vi.hoisted(() => ({
   mockDb: {
     collection: vi.fn(),
     batch: vi.fn(),
-  }
+  },
 }));
 
 vi.mock('../../lib/firebase', () => ({
   db: mockDb,
   FieldValue: {
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-return
     arrayUnion: vi.fn((...args) => args),
     serverTimestamp: vi.fn(() => 'server_time'),
   },
@@ -19,7 +20,10 @@ vi.mock('../../services/notificationService', () => ({
   createNotification: vi.fn(),
 }));
 
-import { checkAndAwardBadges, updateActivityStreak } from '../../services/badgeService';
+import {
+  checkAndAwardBadges,
+  updateActivityStreak,
+} from '../../services/badgeService';
 
 describe('badgeService', () => {
   beforeEach(() => {
@@ -30,7 +34,7 @@ describe('badgeService', () => {
     it('increments streak if active next day', async () => {
       const mockSet = vi.fn();
       const mockUpdate = vi.fn();
-      
+
       const yesterday = new Date();
       yesterday.setDate(yesterday.getDate() - 1);
 
@@ -50,13 +54,13 @@ describe('badgeService', () => {
 
       await updateActivityStreak('user-1');
       expect(mockUpdate).toHaveBeenCalledWith(
-        expect.objectContaining({ streakDays: 6 })
+        expect.objectContaining({ streakDays: 6 }),
       );
     });
 
     it('resets streak if inactive for multiple days', async () => {
       const mockUpdate = vi.fn();
-      
+
       const lastWeek = new Date();
       lastWeek.setDate(lastWeek.getDate() - 5);
 
@@ -75,7 +79,7 @@ describe('badgeService', () => {
 
       await updateActivityStreak('user-1');
       expect(mockUpdate).toHaveBeenCalledWith(
-        expect.objectContaining({ streakDays: 1 })
+        expect.objectContaining({ streakDays: 1 }),
       );
     });
   });
@@ -115,15 +119,16 @@ describe('badgeService', () => {
       });
 
       mockDb.collection = mockCollection;
-      
+
       // Need mock badge batch commit? checkAndAwardBadges calls awardBadge which uses userRef.set
       await checkAndAwardBadges('user-1');
-      
+
       expect(mockSet).toHaveBeenCalledWith(
         expect.objectContaining({
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
           badges: expect.arrayContaining(['report-5']),
         }),
-        { merge: true }
+        { merge: true },
       );
     });
   });

@@ -2,8 +2,8 @@ import * as functions from 'firebase-functions';
 
 import { FieldValue, db, auth } from '../lib/firebase';
 import { log } from '../lib/logger';
-import { normalizeRole } from '../services/authService';
 import { LeaderboardRepository } from '../repositories/leaderboardRepository';
+import { normalizeRole } from '../services/authService';
 
 export const onAuthUserCreated = functions.auth
   .user()
@@ -33,12 +33,12 @@ export const onAuthUserCreated = functions.auth
       );
 
     await auth.setCustomUserClaims(user.uid, { role });
-    
+
     // Initialize leaderboard entries
     const leaderboard = new LeaderboardRepository();
     const periods = ['weekly', 'monthly', 'all_time'] as const;
     const batch = db.batch();
-    
+
     for (const period of periods) {
       batch.set(
         leaderboard.doc(`${period}_${user.uid}`),
@@ -52,7 +52,7 @@ export const onAuthUserCreated = functions.auth
           period,
           updatedAt: FieldValue.serverTimestamp(),
         },
-        { merge: true }
+        { merge: true },
       );
     }
     await batch.commit();

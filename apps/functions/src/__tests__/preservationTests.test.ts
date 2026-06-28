@@ -70,20 +70,22 @@ const {
   mockDocGet: vi.fn(),
   mockDocSet: vi.fn(),
   mockDocUpdate: vi.fn(),
-  mockCollection: vi.fn(function() {
+  mockCollection: vi.fn(function () {
     return {
-      doc: vi.fn(function() {
+      doc: vi.fn(function () {
         return {
           get: mockDocGet,
           set: mockDocSet,
           update: mockDocUpdate,
         };
       }),
-      where: vi.fn(function() {
+      where: vi.fn(function () {
         return {
-          get: vi.fn().mockResolvedValue({ docs: [], size: 0, forEach: vi.fn() })
+          get: vi
+            .fn()
+            .mockResolvedValue({ docs: [], size: 0, forEach: vi.fn() }),
         };
-      })
+      }),
     };
   }),
   mockBatch: vi.fn(() => ({
@@ -169,8 +171,8 @@ beforeEach(() => {
       set: mockDocSet,
     }),
     where: vi.fn().mockReturnValue({
-      get: vi.fn().mockResolvedValue({ forEach: vi.fn() })
-    })
+      get: vi.fn().mockResolvedValue({ forEach: vi.fn() }),
+    }),
   });
   mockDocGet.mockResolvedValue({ exists: true, data: () => undefined });
   mockDocSet.mockResolvedValue(undefined);
@@ -519,9 +521,11 @@ describe('Preservation 4 — onIssueCreated trigger side-effects are independent
         set: mockDocSet,
         update: mockDocUpdate,
       }),
-      where: vi.fn(function() {
+      where: vi.fn(function () {
         return {
-          get: vi.fn().mockResolvedValue({ docs: [], size: 0, forEach: vi.fn() })
+          get: vi
+            .fn()
+            .mockResolvedValue({ docs: [], size: 0, forEach: vi.fn() }),
         };
       }),
     });

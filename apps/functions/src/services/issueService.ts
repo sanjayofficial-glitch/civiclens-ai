@@ -3,12 +3,12 @@ import type { IssueAnalysisResult } from '../types';
 import { DEFAULT_REPUTATION } from '../config';
 import { FieldValue, db } from '../lib/firebase';
 
+import { checkAndAwardBadges, updateActivityStreak } from './badgeService';
 import { detectDuplicateIssue } from './duplicateDetectionService';
 import { analyzeIssueMedia } from './geminiService';
+import { updateLeaderboardStats } from './leaderboardService';
 import { createNotification } from './notificationService';
 import { adjustReputation } from './reputationService';
-import { updateLeaderboardStats } from './leaderboardService';
-import { checkAndAwardBadges, updateActivityStreak } from './badgeService';
 
 function mapAnalysisToAiSuggestion(analysis: IssueAnalysisResult) {
   return {
@@ -66,10 +66,16 @@ export async function enrichIssueOnCreate(issueId: string) {
 
   await adjustReputation(issue.reporterId, DEFAULT_REPUTATION.ISSUE_REPORTED);
   await updateLeaderboardStats(issue.reporterId, { issuesReported: 1 });
-  await db.collection('users').doc(issue.reporterId).set({
-    issuesReported: FieldValue.increment(1),
-    updatedAt: FieldValue.serverTimestamp(),
-  }, { merge: true });
+  await db
+    .collection('users')
+    .doc(issue.reporterId)
+    .set(
+      {
+        issuesReported: FieldValue.increment(1),
+        updatedAt: FieldValue.serverTimestamp(),
+      },
+      { merge: true },
+    );
   await updateActivityStreak(issue.reporterId);
   await checkAndAwardBadges(issue.reporterId);
 
@@ -120,10 +126,16 @@ export async function updateIssueVerification(
     if (snap.exists) {
       const issueData = snap.data() as { reporterId: string };
       await updateLeaderboardStats(issueData.reporterId, { issuesVerified: 1 });
-      await db.collection('users').doc(issueData.reporterId).set({
-        issuesVerified: FieldValue.increment(1),
-        updatedAt: FieldValue.serverTimestamp(),
-      }, { merge: true });
+      await db
+        .collection('users')
+        .doc(issueData.reporterId)
+        .set(
+          {
+            issuesVerified: FieldValue.increment(1),
+            updatedAt: FieldValue.serverTimestamp(),
+          },
+          { merge: true },
+        );
       await checkAndAwardBadges(issueData.reporterId);
     }
   }

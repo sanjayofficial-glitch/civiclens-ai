@@ -4,13 +4,13 @@ const { mockDb } = vi.hoisted(() => ({
   mockDb: {
     collection: vi.fn(),
     batch: vi.fn(),
-  }
+  },
 }));
 
 vi.mock('../../lib/firebase', () => ({
   db: mockDb,
   FieldValue: {
-    increment: vi.fn((n) => n),
+    increment: vi.fn((n: unknown) => n),
     serverTimestamp: vi.fn(() => 'server_time'),
   },
 }));
@@ -28,9 +28,9 @@ vi.mock('../../config', () => ({
 
 vi.mock('../../repositories/leaderboardRepository', () => {
   return {
-    LeaderboardRepository: vi.fn(function() {
+    LeaderboardRepository: vi.fn(function () {
       return { doc: vi.fn().mockReturnValue({ id: 'doc-id' }) };
-    })
+    }),
   };
 });
 
@@ -50,49 +50,90 @@ describe('leaderboardService', () => {
       });
 
       const today = new Date();
-      const mockUsers = [{ id: 'user-1', data: () => ({ displayName: 'Test User', reputation: 100 }) }];
-      
-      const mockIssues = [
-        { data: () => ({ reporterId: 'user-1', status: 'resolved', createdAt: { toDate: () => today } }) }
+      const mockUsers = [
+        {
+          id: 'user-1',
+          data: () => ({ displayName: 'Test User', reputation: 100 }),
+        },
       ];
-      
+
+      const mockIssues = [
+        {
+          data: () => ({
+            reporterId: 'user-1',
+            status: 'resolved',
+            createdAt: { toDate: () => today },
+          }),
+        },
+      ];
+
       const mockVotes = [
-        { data: () => ({ userId: 'user-1', type: 'upvote', createdAt: { toDate: () => today } }) }
+        {
+          data: () => ({
+            userId: 'user-1',
+            type: 'upvote',
+            createdAt: { toDate: () => today },
+          }),
+        },
       ];
 
       mockDb.collection.mockImplementation((name: string) => {
         if (name === 'users') {
-          return { get: vi.fn().mockResolvedValue({ forEach: (cb: any) => mockUsers.forEach(cb) }) };
+          return {
+            get: vi.fn().mockResolvedValue({
+              forEach: (cb: (...args: unknown[]) => void) => {
+                mockUsers.forEach(cb);
+              },
+            }),
+          };
         }
         if (name === 'issues') {
-          return { get: vi.fn().mockResolvedValue({ forEach: (cb: any) => mockIssues.forEach(cb) }) };
+          return {
+            get: vi.fn().mockResolvedValue({
+              forEach: (cb: (...args: unknown[]) => void) => {
+                mockIssues.forEach(cb);
+              },
+            }),
+          };
         }
         if (name === 'votes') {
-          return { 
+          return {
             where: vi.fn().mockReturnValue({
-              get: vi.fn().mockResolvedValue({ forEach: (cb: any) => mockVotes.forEach(cb) })
-            })
+              get: vi.fn().mockResolvedValue({
+                forEach: (cb: (...args: unknown[]) => void) => {
+                  mockVotes.forEach(cb);
+                },
+              }),
+            }),
           };
         }
         if (name === 'comments') {
-          return { 
+          return {
             where: vi.fn().mockReturnValue({
-              get: vi.fn().mockResolvedValue({ forEach: (cb: any) => [].forEach(cb) })
-            })
+              get: vi.fn().mockResolvedValue({
+                forEach: (cb: (...args: unknown[]) => void) => {
+                  [].forEach(cb);
+                },
+              }),
+            }),
           };
         }
         if (name === 'leaderboard') {
-          return { 
+          return {
             where: vi.fn().mockReturnValue({
-              get: vi.fn().mockResolvedValue({ forEach: (cb: any) => [].forEach(cb) })
-            })
+              get: vi.fn().mockResolvedValue({
+                forEach: (cb: (...args: unknown[]) => void) => {
+                  [].forEach(cb);
+                },
+              }),
+            }),
           };
         }
         return { get: vi.fn().mockResolvedValue({ forEach: vi.fn() }) };
       });
 
       await rebuildLeaderboard('weekly');
-      
+
       // Issue reported (+5), Issue resolved (+15), Upvote cast (+2) = 22
       expect(mockSet).toHaveBeenCalledWith(
         expect.anything(),
@@ -102,7 +143,7 @@ describe('leaderboardService', () => {
           issuesReported: 1,
           issuesVerified: 0,
         }),
-        { merge: true }
+        { merge: true },
       );
     });
   });

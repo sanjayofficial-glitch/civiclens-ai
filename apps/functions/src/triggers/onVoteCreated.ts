@@ -3,9 +3,12 @@ import { onDocumentCreated } from 'firebase-functions/v2/firestore';
 import { DEFAULT_REPUTATION } from '../config';
 import { db } from '../lib/firebase';
 import { recordDailyMetrics } from '../services/analyticsService';
+import {
+  checkAndAwardBadges,
+  updateActivityStreak,
+} from '../services/badgeService';
 import { createNotification } from '../services/notificationService';
 import { adjustReputation } from '../services/reputationService';
-import { checkAndAwardBadges, updateActivityStreak } from '../services/badgeService';
 
 export const onVoteCreated = onDocumentCreated(
   'votes/{voteId}',

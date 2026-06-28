@@ -54,7 +54,10 @@ export const analyzeIssueImage = onCall(async (request) => {
       locationText: locationText || undefined,
     });
 
-    return { status: analysis.usedFallback ? 'fallback' : 'success', analysis: toAiSuggestion(analysis) };
+    return {
+      status: analysis.usedFallback ? 'fallback' : 'success',
+      analysis: toAiSuggestion(analysis),
+    };
   }
 
   // Try issueIdSchema
@@ -92,5 +95,8 @@ export const analyzeIssueImage = onCall(async (request) => {
     { merge: true },
   );
 
-  return { status: analysis.usedFallback ? 'fallback' : 'success', analysis: aiSuggestion };
+  return {
+    status: analysis.usedFallback ? 'fallback' : 'success',
+    analysis: aiSuggestion,
+  };
 });

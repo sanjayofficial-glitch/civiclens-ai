@@ -1,4 +1,5 @@
 import { FieldValue, db } from '../lib/firebase';
+
 import { checkAndAwardBadges } from './badgeService';
 
 export async function registerVote(input: {

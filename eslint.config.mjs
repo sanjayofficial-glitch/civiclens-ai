@@ -26,7 +26,13 @@ export default tseslint.config(
     },
     languageOptions: {
       parserOptions: {
-        projectService: true,
+        projectService: {
+          allowDefaultProject: [
+            'apps/web/vitest.config.ts',
+            'apps/functions/vitest.config.ts',
+            'packages/shared/vitest.config.ts',
+          ],
+        },
         tsconfigRootDir: import.meta.dirname,
       },
     },
