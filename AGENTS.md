@@ -110,6 +110,18 @@ Firebase (Firestore + Auth + Storage + Cloud Functions + Hosting)
 
 ---
 
+## Session Memory: Gamification System (2026-06-28)
+
+**Badge system overhaul:** Unified `checkAndAwardBadges()` replaces separate `checkReportBadges()` / `checkVerificationBadges()`. 17 tiered badges across report milestones (1/5/10/25/50), verification milestones (10/25/50), streak milestones (7/30/90 days), and category-specific badges (pothole-hunter, streetlight-guardian, photo-pro, detail-oriented).
+
+**Activity streaks:** `updateActivityStreak()` normalizes dates to midnight UTC before computing day diff. Called from `onIssueCreated` trigger. Streak resets to 1 if gap > 1 day, increments if gap == 1 day.
+
+**Leaderboard scoring:** Period-based aggregation includes issues + verifications + votes + comments + resolution bonus. Rank tracking via `currentRank` + `previousRank` fields with tie handling (same score = same rank).
+
+**Firestore query simplification:** `CommentService` removed `orderBy('createdAt')` from queries — sorts client-side to avoid requiring a composite Firestore index.
+
+---
+
 ## Directory Structure
 
 ```

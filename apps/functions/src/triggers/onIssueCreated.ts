@@ -8,6 +8,7 @@ import {
   recordDailyMetrics,
   recordCategoryMetrics,
   recordStatusMetrics,
+  recordAnalyticsEvent,
 } from '../services/analyticsService';
 import { enrichIssueOnCreate } from '../services/issueService';
 
@@ -33,6 +34,7 @@ export const onIssueCreated = onDocumentCreated(
       recordDailyMetrics({ newIssues: 1 }),
       recordCategoryMetrics(issue.category ?? 'other'),
       recordStatusMetrics('reported'),
+      recordAnalyticsEvent('global', 'global', { totalIssues: 1 }),
     ]);
   },
 );

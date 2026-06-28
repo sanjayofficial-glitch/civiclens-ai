@@ -26,6 +26,14 @@ vi.mock('../../services/storageService', () => ({
   fetchFileBuffer: mockFetchFileBuffer,
 }));
 
+vi.mock('../../lib/firebase', () => ({
+  bucket: {
+    file: vi.fn().mockReturnValue({
+      download: vi.fn().mockResolvedValue([Buffer.from('mock-image-data')]),
+    }),
+  },
+}));
+
 import { analyzeIssueMedia } from '../../services/geminiService';
 
 beforeEach(() => {
@@ -58,8 +66,8 @@ describe('analyzeIssueMedia', () => {
       category: 'pothole',
       severity: 'high',
       confidence: 0.95,
-      title: 'Pothole on Main St',
-      description: 'A deep pothole near the intersection.',
+      suggestedTitle: 'Pothole on Main St',
+      suggestedDescription: 'A deep pothole near the intersection.',
       suggestedTags: ['pothole', 'road'],
       duplicateScore: 0.1,
       safetyConcern: false,
@@ -206,7 +214,7 @@ describe('analyzeIssueMedia', () => {
               content: {
                 parts: [
                   {
-                    text: '```json\n{"category":"pothole","severity":"medium","confidence":0.8,"title":"Test","description":"Test","suggestedTags":["road"],"duplicateScore":0,"safetyConcern":false}\n```',
+                    text: '```json\n{"category":"pothole","severity":"medium","confidence":0.8,"suggestedTitle":"Test","suggestedDescription":"Test","suggestedTags":["road"],"duplicateScore":0,"safetyConcern":false}\n```',
                   },
                 ],
               },

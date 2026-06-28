@@ -233,8 +233,8 @@ describe('Test 1C — Field names (Bug Condition)', () => {
                       category: 'pothole',
                       severity: 'medium',
                       confidence: 0.85,
-                      title: 'Pothole on Baker Street',
-                      description: 'Large pothole blocking traffic',
+                      suggestedTitle: 'Pothole on Baker Street',
+                      suggestedDescription: 'Large pothole blocking traffic',
                       suggestedTags: ['pothole', 'road'],
                       duplicateScore: 0.05,
                       safetyConcern: false,
@@ -321,6 +321,7 @@ describe('Test 5 — analytics/global (Bug Condition)', () => {
       reportCount: 1,
     });
     await recordAnalyticsEvent('status_reported', 'status', { issueCount: 1 });
+    await recordAnalyticsEvent('global', 'global', { totalIssues: 1 });
 
     // EXPECTED AFTER FIX: 'global' doc was written by onIssueCreated trigger
     // CURRENT (UNFIXED): 'global' is never written → writtenDocIds does not include 'global'

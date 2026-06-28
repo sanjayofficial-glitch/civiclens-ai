@@ -18,11 +18,12 @@ export interface IssueAnalysisResult {
   category: string;
   severity: 'low' | 'medium' | 'high' | 'critical';
   confidence: number;
-  title: string;
-  description: string;
+  suggestedTitle: string;
+  suggestedDescription: string;
   suggestedTags: string[];
   duplicateScore: number;
   safetyConcern: boolean;
+  usedFallback?: boolean;
 }
 
 export interface DuplicateMatch {

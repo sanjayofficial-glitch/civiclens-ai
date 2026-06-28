@@ -15,10 +15,11 @@ function mapAnalysisToAiSuggestion(analysis: IssueAnalysisResult) {
     category: analysis.category,
     severity: analysis.severity,
     confidence: analysis.confidence,
-    suggestedTitle: analysis.title,
-    suggestedDescription: analysis.description,
+    suggestedTitle: analysis.suggestedTitle,
+    suggestedDescription: analysis.suggestedDescription,
     suggestedTags: analysis.suggestedTags,
     duplicateProbability: analysis.duplicateScore,
+    usedFallback: analysis.usedFallback ?? false,
   };
 }
 

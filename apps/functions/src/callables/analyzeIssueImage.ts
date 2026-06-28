@@ -27,15 +27,15 @@ const directSchema = z.object({
   locationText: z.string().optional().default(''),
 });
 
-function toAiSuggestion(analysis: IssueAnalysisResult) {
   return {
     category: analysis.category,
     severity: analysis.severity,
     confidence: analysis.confidence,
-    suggestedTitle: analysis.title,
-    suggestedDescription: analysis.description,
+    suggestedTitle: analysis.suggestedTitle,
+    suggestedDescription: analysis.suggestedDescription,
     suggestedTags: analysis.suggestedTags,
     duplicateProbability: analysis.duplicateScore,
+    usedFallback: analysis.usedFallback,
   };
 }
 
@@ -53,7 +53,7 @@ export const analyzeIssueImage = onCall(async (request) => {
       locationText: locationText || undefined,
     });
 
-    return { status: 'success', analysis: toAiSuggestion(analysis) };
+    return { status: analysis.usedFallback ? 'fallback' : 'success', analysis: toAiSuggestion(analysis) };
   }
 
   // Try issueIdSchema
@@ -91,5 +91,5 @@ export const analyzeIssueImage = onCall(async (request) => {
     { merge: true },
   );
 
-  return { status: 'success', analysis: aiSuggestion };
+  return { status: analysis.usedFallback ? 'fallback' : 'success', analysis: aiSuggestion };
 });

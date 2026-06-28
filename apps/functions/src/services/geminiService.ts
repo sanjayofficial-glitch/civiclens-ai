@@ -4,6 +4,7 @@ import { GEMINI_MAX_RETRIES, GEMINI_MODEL, GEMINI_TIMEOUT_MS } from '../config';
 import { fail } from '../lib/errors';
 
 import { fetchFileBuffer } from './storageService';
+import { bucket } from '../lib/firebase';
 
 interface GeminiPart {
   text?: string;
@@ -57,14 +58,15 @@ function fallbackAnalysis(input: {
     category,
     severity,
     confidence: input.imageUrls.length > 0 ? 0.55 : 0.35,
-    title: input.title.slice(0, 120) || 'Civic issue report',
-    description: input.description.slice(0, 500),
+    suggestedTitle: input.title.slice(0, 120) || 'Civic issue report',
+    suggestedDescription: input.description.slice(0, 500),
     suggestedTags: [category, severity],
     duplicateScore: 0.1,
     safetyConcern:
       text.includes('fire') ||
       text.includes('accident') ||
       text.includes('hazard'),
+    usedFallback: true,
   };
 }
 
@@ -131,7 +133,15 @@ export async function analyzeIssueMedia(input: {
   const imageParts: GeminiPart[] = [];
   for (const url of input.imageUrls.slice(0, 3)) {
     try {
-      const buffer = await fetchFileBuffer(url);
+      let buffer: Buffer;
+      const pathMatch = decodeURIComponent(url).match(/\/o\/(.+?)(?:\?|$)/);
+      if (pathMatch && pathMatch[1]) {
+        const [downloaded] = await bucket.file(pathMatch[1]).download();
+        buffer = downloaded;
+      } else {
+        buffer = await fetchFileBuffer(url);
+      }
+
       imageParts.push({
         inlineData: {
           mimeType: 'image/jpeg',
@@ -146,11 +156,11 @@ export async function analyzeIssueMedia(input: {
   const prompt = [
     'You are analyzing a civic issue report.',
     'Return strictly valid JSON with this shape:',
-    '{ category, severity, confidence, title, description, suggestedTags, duplicateScore, safetyConcern }',
+    '{ category, severity, confidence, suggestedTitle, suggestedDescription, suggestedTags, duplicateScore, safetyConcern }',
     'category must be one of pothole, streetlight, water_leak, garbage, graffiti, sidewalk, other.',
     'severity must be low, medium, high, or critical.',
     'confidence and duplicateScore must be numbers from 0 to 1.',
-    'title and description should be concise and useful.',
+    'suggestedTitle and suggestedDescription should be concise and useful.',
     'suggestedTags should be an array of short strings.',
     `Report title: ${input.title}`,
     `Report description: ${input.description}`,
