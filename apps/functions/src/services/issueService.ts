@@ -7,6 +7,7 @@ import { detectDuplicateIssue } from './duplicateDetectionService';
 import { analyzeIssueMedia } from './geminiService';
 import { createNotification } from './notificationService';
 import { adjustReputation } from './reputationService';
+import { updateLeaderboardStats } from './leaderboardService';
 
 function mapAnalysisToAiSuggestion(analysis: IssueAnalysisResult) {
   return {
@@ -62,6 +63,7 @@ export async function enrichIssueOnCreate(issueId: string) {
   );
 
   await adjustReputation(issue.reporterId, DEFAULT_REPUTATION.ISSUE_REPORTED);
+  await updateLeaderboardStats(issue.reporterId, { issuesReported: 1 });
 
   if (duplicate) {
     await createNotification({
@@ -101,4 +103,15 @@ export async function updateIssueVerification(
       },
       { merge: true },
     );
+
+  if (status === 'verified') {
+    // Only increment verified count if this transition is to 'verified'
+    // Since verifiedBy might change multiple times, this requires care,
+    // but for simplicity, we assume we update the original reporter.
+    const snap = await db.collection('issues').doc(issueId).get();
+    if (snap.exists) {
+      const issueData = snap.data() as { reporterId: string };
+      await updateLeaderboardStats(issueData.reporterId, { issuesVerified: 1 });
+    }
+  }
 }

@@ -17,6 +17,32 @@ function periodWindow(period: 'weekly' | 'monthly' | 'all_time') {
   return now;
 }
 
+export async function updateLeaderboardStats(
+  uid: string,
+  deltas: { score?: number; issuesReported?: number; issuesVerified?: number },
+) {
+  const batch = db.batch();
+  const periods = ['weekly', 'monthly', 'all_time'] as const;
+  const now = FieldValue.serverTimestamp();
+
+  for (const period of periods) {
+    const docRef = leaderboard.doc(`${period}_${uid}`);
+    const updates: Record<string, unknown> = { updatedAt: now };
+    if (deltas.score !== undefined) {
+      updates.score = FieldValue.increment(deltas.score);
+    }
+    if (deltas.issuesReported !== undefined) {
+      updates.issuesReported = FieldValue.increment(deltas.issuesReported);
+    }
+    if (deltas.issuesVerified !== undefined) {
+      updates.issuesVerified = FieldValue.increment(deltas.issuesVerified);
+    }
+    batch.set(docRef, updates, { merge: true });
+  }
+
+  await batch.commit();
+}
+
 export async function rebuildLeaderboard(
   period: 'weekly' | 'monthly' | 'all_time',
 ) {
@@ -61,10 +87,9 @@ export async function rebuildLeaderboard(
   usersSnapshot.forEach((doc) => {
     const data = doc.data() as Record<string, unknown>;
     const stats = issueCounts.get(doc.id) ?? { reported: 0, verified: 0 };
-    const score =
-      stats.reported * DEFAULT_REPUTATION.ISSUE_REPORTED +
-      stats.verified * DEFAULT_REPUTATION.ISSUE_VERIFIED +
-      Number(data.reputation ?? 0);
+    // Avoid double-counting: reputation already includes points for issues reported/verified.
+    // We'll just use the user's all-time reputation for all periods as a fallback for now.
+    const score = Number(data.reputation ?? 0);
 
     const record = {
       userId: doc.id,

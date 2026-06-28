@@ -1,4 +1,5 @@
 import { FieldValue, db } from '../lib/firebase';
+import { updateLeaderboardStats } from './leaderboardService';
 
 export async function adjustReputation(uid: string, delta: number) {
   await db
@@ -11,4 +12,6 @@ export async function adjustReputation(uid: string, delta: number) {
       },
       { merge: true },
     );
+
+  await updateLeaderboardStats(uid, { score: delta });
 }

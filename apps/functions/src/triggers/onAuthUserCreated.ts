@@ -3,6 +3,7 @@ import * as functions from 'firebase-functions';
 import { FieldValue, db, auth } from '../lib/firebase';
 import { log } from '../lib/logger';
 import { normalizeRole } from '../services/authService';
+import { LeaderboardRepository } from '../repositories/leaderboardRepository';
 
 export const onAuthUserCreated = functions.auth
   .user()
@@ -32,5 +33,29 @@ export const onAuthUserCreated = functions.auth
       );
 
     await auth.setCustomUserClaims(user.uid, { role });
+    
+    // Initialize leaderboard entries
+    const leaderboard = new LeaderboardRepository();
+    const periods = ['weekly', 'monthly', 'all_time'] as const;
+    const batch = db.batch();
+    
+    for (const period of periods) {
+      batch.set(
+        leaderboard.doc(`${period}_${user.uid}`),
+        {
+          userId: user.uid,
+          displayName: user.displayName ?? 'Anonymous Citizen',
+          photoURL: user.photoURL ?? null,
+          score: 0,
+          issuesReported: 0,
+          issuesVerified: 0,
+          period,
+          updatedAt: FieldValue.serverTimestamp(),
+        },
+        { merge: true }
+      );
+    }
+    await batch.commit();
+
     log.info('Auth user profile initialized', { uid: user.uid, role });
   });
