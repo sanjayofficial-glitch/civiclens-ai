@@ -25,6 +25,7 @@ import { GeoPoint } from 'firebase/firestore';
 import { UploadService } from '@/services/upload.service';
 import { AiService } from '@/services/ai.service';
 import { GeolocationService } from '@/services/geolocation.service';
+import { useIsland } from '@/providers/island-provider';
 
 const DEFAULT_CENTER: [number, number] = [20.5937, 78.9629]; // India center
 const DEFAULT_ZOOM = 5;
@@ -104,6 +105,7 @@ export default function ReportWizardPage() {
   const [locating, setLocating] = useState(false);
   // Store all photo Blobs (camera + gallery) for upload. Index 0 = camera photo.
   const photoBlobs = useRef<Blob[]>([]);
+  const { setIslandState } = useIsland();
 
   // Persist draft (exclude localPhoto — blob: URLs don't survive reload)
   useEffect(() => {
@@ -157,6 +159,7 @@ export default function ReportWizardPage() {
     const title = draft.title;
     const description = draft.description;
     setAiLoading(true);
+    setIslandState('scanning');
 
     try {
       // Upload ALL photos to Firebase Storage in parallel first
@@ -211,8 +214,9 @@ export default function ReportWizardPage() {
       toast.error('Something went wrong. You can fill in details manually.');
     } finally {
       setAiLoading(false);
+      setIslandState(null);
     }
-  }, [draft.title, draft.description, user]);
+  }, [draft.title, draft.description, user, setIslandState]);
 
   const next = async () => {
     // Step 2 → 3: move to AI step immediately, run upload + AI in background

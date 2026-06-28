@@ -20,21 +20,21 @@ export default function SplashPage() {
         transition={{ duration: 0.6, ease: 'easeOut' }}
         className="flex flex-col items-center text-center"
       >
-        <div className="glass mb-6 grid size-24 place-items-center rounded-3xl border border-primary/20 shadow-xl shadow-primary/10">
-          <Shield className="size-12 text-primary" aria-hidden="true" />
+        <div className="glass-light mb-6 grid size-24 place-items-center rounded-3xl border border-indigo-500/20 shadow-[var(--shadow-glow)]">
+          <Shield className="size-12 text-indigo-500" aria-hidden="true" />
         </div>
-        <H1 className="bg-gradient-to-br from-primary to-primary/70 bg-clip-text text-transparent">
+        <H1 className="bg-[image:var(--image-ai-gradient)] bg-clip-text text-transparent tracking-tight">
           BlockSeBlock
         </H1>
         <Lead className="mt-2 max-w-xs">
           Report civic issues. Build better communities.
         </Lead>
         <motion.div
-          className="mt-8 h-1 w-24 overflow-hidden rounded-full bg-muted"
+          className="mt-8 h-1 w-24 overflow-hidden rounded-full bg-white/10"
           aria-hidden="true"
         >
           <motion.div
-            className="h-full bg-primary"
+            className="h-full bg-[image:var(--image-ai-gradient)]"
             initial={{ width: '0%' }}
             animate={{ width: '100%' }}
             transition={{ duration: 2, ease: 'easeInOut' }}

@@ -12,7 +12,7 @@ const SLIDES = [
     title: 'Snap & Report',
     description:
       'Capture civic issues with photos or video. AI helps categorize and prioritize your report.',
-    color: 'bg-primary/15 text-primary',
+    color: 'bg-indigo-500/15 text-indigo-400',
   },
   {
     icon: Map,
@@ -44,7 +44,7 @@ export default function OnboardingPage() {
 
   return (
     <AuthLayout>
-      <div className="glass rounded-2xl border border-border/50 p-8 shadow-xl">
+      <div className="glass-medium rounded-3xl border border-white/10 p-8 shadow-[var(--shadow-island)]">
         <AnimatePresence mode="wait">
           <motion.div
             key={step}
@@ -74,7 +74,7 @@ export default function OnboardingPage() {
               aria-label={`Step ${i + 1} of ${SLIDES.length}`}
               onClick={() => setStep(i)}
               className={`h-2 rounded-full transition-all ${
-                i === step ? 'w-8 bg-primary' : 'w-2 bg-muted'
+                i === step ? 'w-8 bg-[image:var(--image-ai-gradient)]' : 'w-2 bg-white/10'
               }`}
             />
           ))}

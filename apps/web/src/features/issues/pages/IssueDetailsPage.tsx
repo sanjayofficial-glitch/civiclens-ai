@@ -70,11 +70,11 @@ const pinIcon = L.divIcon({
 });
 
 const STATUS_TIMELINE = [
-  { status: 'reported',    label: 'Reported',     icon: AlertTriangle,  color: 'text-orange-500' },
-  { status: 'verified',    label: 'Verified',     icon: CheckCircle2,   color: 'text-blue-500'   },
-  { status: 'in_progress', label: 'In Progress',  icon: Wrench,         color: 'text-yellow-500' },
-  { status: 'resolved',    label: 'Resolved',     icon: CheckCircle2,   color: 'text-green-500'  },
-  { status: 'rejected',    label: 'Rejected',     icon: XCircle,        color: 'text-red-500'    },
+  { status: 'reported',    label: 'Reported',     icon: AlertTriangle,  color: 'text-amber-500' },
+  { status: 'verified',    label: 'Verified',     icon: CheckCircle2,   color: 'text-cyan-500'   },
+  { status: 'in_progress', label: 'In Progress',  icon: Wrench,         color: 'text-indigo-500' },
+  { status: 'resolved',    label: 'Resolved',     icon: CheckCircle2,   color: 'text-emerald-500'  },
+  { status: 'rejected',    label: 'Rejected',     icon: XCircle,        color: 'text-rose-500'    },
 ] as const;
 
 const STATUS_ORDER = ['reported', 'verified', 'in_progress', 'resolved'] as const;
@@ -277,7 +277,7 @@ export default function IssueDetailsPage() {
       <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="pb-10">
         {/* Image gallery */}
         {images.length > 0 && (
-          <div className="relative aspect-video bg-muted">
+          <div className="relative aspect-square sm:aspect-video bg-ink-900 rounded-b-3xl overflow-hidden shadow-xl">
             <img src={images[imageIndex]} alt="" className="size-full object-cover" />
             {images.length > 1 && (
               <>
@@ -472,7 +472,7 @@ export default function IssueDetailsPage() {
                         {c.userId.substring(0, 2).toUpperCase()}
                       </AvatarFallback>
                     </Avatar>
-                    <div className="flex-1 rounded-xl bg-muted/50 px-3 py-2">
+                    <div className="flex-1 rounded-2xl glass-light px-3 py-2 border border-white/5">
                       <p className="text-xs font-medium">Citizen {c.userId.substring(0, 4).toUpperCase()}</p>
                       <p className="mt-0.5 text-sm">{c.text}</p>
                       <p className="mt-1 text-[10px] text-muted-foreground">

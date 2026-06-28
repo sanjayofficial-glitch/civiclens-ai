@@ -3,6 +3,7 @@ import { ThemeProvider } from './theme-provider';
 import { QueryProvider } from './query-provider';
 import { Toaster } from '@/components/ui/sonner';
 import { AuthProvider } from '@/hooks/useAuth';
+import { IslandProvider } from './island-provider';
 
 /**
  * Composes the global providers in the correct order:
@@ -13,8 +14,10 @@ export function AppProviders({ children }: { children: ReactNode }) {
     <ThemeProvider>
       <QueryProvider>
         <AuthProvider>
-          {children}
-          <Toaster />
+          <IslandProvider>
+            {children}
+            <Toaster />
+          </IslandProvider>
         </AuthProvider>
       </QueryProvider>
     </ThemeProvider>

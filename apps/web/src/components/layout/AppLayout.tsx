@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react';
 import { cn } from '@/lib/utils';
-import { BottomNav } from './BottomNav';
+import { DynamicIsland } from './DynamicIsland';
+import { useIsland } from '@/providers/island-provider';
 
 interface AppLayoutProps {
   children: ReactNode;
@@ -10,6 +11,8 @@ interface AppLayoutProps {
 }
 
 export function AppLayout({ children, hideNav = false, className }: AppLayoutProps) {
+  const { islandState, activity, queuedCount } = useIsland();
+
   return (
     <div className="min-h-dvh bg-background">
       <main
@@ -21,7 +24,13 @@ export function AppLayout({ children, hideNav = false, className }: AppLayoutPro
       >
         {children}
       </main>
-      {!hideNav && <BottomNav />}
+      {(!hideNav || islandState) && (
+        <DynamicIsland
+          forceState={islandState}
+          activity={activity}
+          queuedCount={queuedCount}
+        />
+      )}
     </div>
   );
 }

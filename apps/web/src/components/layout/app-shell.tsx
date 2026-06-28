@@ -1,7 +1,8 @@
 import { Outlet, useLocation } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
 import { TopBar } from './top-bar';
-import { BottomNav } from './bottom-nav';
+import { DynamicIsland } from './DynamicIsland';
+import { useIsland } from '@/providers/island-provider';
 import { cn } from '@/lib/utils';
 
 export interface AppShellProps {
@@ -14,8 +15,7 @@ export interface AppShellProps {
 
 /**
  * Root layout shell — renders TopBar, page content (animated transitions),
- * and BottomNav. On desktop the BottomNav hides; a sidebar will replace it
- * in a future iteration.
+ * and DynamicIsland.
  */
 export function AppShell({
   title,
@@ -23,6 +23,7 @@ export function AppShell({
   className,
 }: AppShellProps) {
   const location = useLocation();
+  const { islandState, activity, queuedCount } = useIsland();
 
   return (
     <div className={cn('flex min-h-dvh flex-col bg-background', className)}>
@@ -41,7 +42,13 @@ export function AppShell({
         </motion.div>
       </AnimatePresence>
 
-      {showBottomNav && <BottomNav />}
+      {showBottomNav && (
+        <DynamicIsland
+          forceState={islandState}
+          activity={activity}
+          queuedCount={queuedCount}
+        />
+      )}
     </div>
   );
 }
