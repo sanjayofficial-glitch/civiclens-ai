@@ -60,61 +60,131 @@ export async function rebuildLeaderboard(
   const start = periodWindow(period);
   const usersSnapshot = await db.collection('users').get();
   const issuesSnapshot = await db.collection('issues').get();
-
-  const issueCounts = new Map<string, { reported: number; verified: number }>();
+  
+  // Track period points and stats per user
+  const userStats = new Map<string, { score: number; reported: number; verified: number }>();
+  
+  const ensureUser = (uid: string) => {
+    if (!userStats.has(uid)) {
+      userStats.set(uid, { score: 0, reported: 0, verified: 0 });
+    }
+    return userStats.get(uid)!;
+  };
 
   issuesSnapshot.forEach((doc) => {
     const data = doc.data() as Record<string, unknown>;
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-    const createdAt =
-      (data.createdAt as { toDate?: () => Date } | undefined)?.toDate?.() ??
-      new Date(0);
-    if (createdAt < start && period !== 'all_time') {
-      return;
+    const createdAt = (data.createdAt as { toDate?: () => Date } | undefined)?.toDate?.() ?? new Date(0);
+    
+    if (createdAt >= start || period === 'all_time') {
+      const reporterId = String(data.reporterId);
+      const stats = ensureUser(reporterId);
+      stats.reported += 1;
+      stats.score += DEFAULT_REPUTATION.ISSUE_REPORTED;
+      
+      if (data.status === 'resolved') {
+        stats.score += DEFAULT_REPUTATION.ISSUE_RESOLVED;
+      }
     }
-
-    const reporterId = String(data.reporterId);
-    const stats = issueCounts.get(reporterId) ?? {
-      reported: 0,
-      verified: 0,
-    };
-    stats.reported += 1;
+    
+    // Verifications (assuming verification timestamp is close to issue creation for now, or just counting all verifications on issues created in this period - a simplification)
+    // Actually, to be perfectly accurate we'd need a separate verifications collection, but let's use the issue's verifiedBy array.
     if (
       (data.status === 'verified' || data.status === 'resolved') &&
-      Array.isArray(
-        (data.verification as Record<string, unknown> | undefined)?.verifiedBy,
-      ) &&
-      ((data.verification as Record<string, unknown>).verifiedBy as unknown[])
-        .length > 0
+      Array.isArray((data.verification as Record<string, unknown> | undefined)?.verifiedBy)
     ) {
-      stats.verified += 1;
+      const verifiedBy = (data.verification as Record<string, unknown>).verifiedBy as string[];
+      for (const verifierId of verifiedBy) {
+        // If period is not all_time, we only count verifications on issues *created* in this period as a proxy, 
+        // since we don't have verification timestamps.
+        if (createdAt >= start || period === 'all_time') {
+           const vStats = ensureUser(String(verifierId));
+           vStats.verified += 1;
+           vStats.score += DEFAULT_REPUTATION.ISSUE_VERIFIED;
+        }
+      }
     }
-    issueCounts.set(reporterId, stats);
+  });
+
+  if (period !== 'all_time') {
+    // Add votes in period
+    const votesQuery = await db.collection('votes').where('createdAt', '>=', start).get();
+    votesQuery.forEach((doc) => {
+      const data = doc.data() as { userId: string; type: 'upvote' | 'downvote' };
+      const stats = ensureUser(data.userId);
+      stats.score += data.type === 'upvote' ? DEFAULT_REPUTATION.UPVOTE_CAST : DEFAULT_REPUTATION.DOWNVOTE_CAST;
+    });
+
+    // Add comments in period
+    const commentsQuery = await db.collection('comments').where('createdAt', '>=', start).get();
+    commentsQuery.forEach((doc) => {
+      const data = doc.data() as { authorId: string };
+      const stats = ensureUser(data.authorId);
+      stats.score += DEFAULT_REPUTATION.COMMENT_CREATED;
+    });
+  }
+
+  // Get current leaderboard to determine previous ranks
+  const currentLeaderboard = await db.collection('leaderboard').where('period', '==', period).get();
+  const previousRanks = new Map<string, number>();
+  currentLeaderboard.forEach((doc) => {
+    const data = doc.data();
+    if (typeof data.currentRank === 'number') {
+      previousRanks.set(data.userId, data.currentRank);
+    }
   });
 
   const batch = db.batch();
   const now = FieldValue.serverTimestamp();
 
+  // Prepare records to sort for current rank
+  const newRecords: any[] = [];
+
   usersSnapshot.forEach((doc) => {
     const data = doc.data() as Record<string, unknown>;
-    const stats = issueCounts.get(doc.id) ?? { reported: 0, verified: 0 };
-    // Avoid double-counting: reputation already includes points for issues reported/verified.
-    // We'll just use the user's all-time reputation for all periods as a fallback for now.
-    const score = Number(data.reputation ?? 0);
+    const uid = doc.id;
+    let score = 0;
+    let reported = 0;
+    let verified = 0;
+    
+    if (period === 'all_time') {
+      score = Number(data.reputation ?? 0);
+      reported = Number(data.issuesReported ?? 0);
+      verified = Number(data.issuesVerified ?? 0);
+    } else {
+      const stats = userStats.get(uid);
+      if (stats) {
+        score = stats.score;
+        reported = stats.reported;
+        verified = stats.verified;
+      }
+    }
 
-    const record = {
-      userId: doc.id,
+    newRecords.push({
+      userId: uid,
       displayName: (data.displayName as string | undefined) ?? 'Anonymous',
       photoURL: data.photoURL ?? null,
       score,
-      issuesReported: stats.reported,
-      issuesVerified: stats.verified,
+      issuesReported: reported,
+      issuesVerified: verified,
       period,
       updatedAt: now,
-    };
-
-    batch.set(leaderboard.doc(`${period}_${doc.id}`), record, { merge: true });
+      previousRank: previousRanks.get(uid) ?? null,
+    });
   });
+
+  // Sort by score desc to assign current rank
+  newRecords.sort((a, b) => b.score - a.score);
+  
+  let currentRank = 1;
+  for (let i = 0; i < newRecords.length; i++) {
+    // Handle ties
+    if (i > 0 && newRecords[i].score < newRecords[i - 1].score) {
+      currentRank = i + 1;
+    }
+    newRecords[i].currentRank = currentRank;
+    
+    batch.set(leaderboard.doc(`${period}_${newRecords[i].userId}`), newRecords[i], { merge: true });
+  }
 
   await batch.commit();
 }

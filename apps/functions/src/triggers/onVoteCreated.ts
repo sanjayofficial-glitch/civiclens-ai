@@ -5,6 +5,7 @@ import { db } from '../lib/firebase';
 import { recordDailyMetrics } from '../services/analyticsService';
 import { createNotification } from '../services/notificationService';
 import { adjustReputation } from '../services/reputationService';
+import { checkAndAwardBadges, updateActivityStreak } from '../services/badgeService';
 
 export const onVoteCreated = onDocumentCreated(
   'votes/{voteId}',
@@ -29,6 +30,8 @@ export const onVoteCreated = onDocumentCreated(
         ? DEFAULT_REPUTATION.UPVOTE_CAST
         : DEFAULT_REPUTATION.DOWNVOTE_CAST,
     );
+    await updateActivityStreak(vote.userId);
+    await checkAndAwardBadges(vote.userId);
 
     if (vote.type === 'upvote') {
       await recordDailyMetrics({ verifications: 1 });

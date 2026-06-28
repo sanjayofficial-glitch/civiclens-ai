@@ -13,6 +13,8 @@ export const leaderboardEntrySchema = z.object({
   period: leaderboardPeriodSchema,
   weekStart: timestampSchema.optional(),
   monthStart: timestampSchema.optional(),
+  previousRank: z.number().int().optional(),
+  currentRank: z.number().int().optional(),
 });
 
 export type LeaderboardEntry = z.infer<typeof leaderboardEntrySchema>;

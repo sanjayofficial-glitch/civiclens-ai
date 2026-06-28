@@ -60,14 +60,31 @@ vi.mock('../services/storageService', () => ({
 const {
   mockDocGet,
   mockDocSet,
+  mockDocUpdate,
   mockCollection,
+  mockBatch,
   mockAdjustReputation,
   mockDetectDuplicate,
   mockCreateNotification,
 } = vi.hoisted(() => ({
   mockDocGet: vi.fn(),
   mockDocSet: vi.fn(),
-  mockCollection: vi.fn(),
+  mockDocUpdate: vi.fn(),
+  mockCollection: vi.fn(function() {
+    return {
+      doc: vi.fn(function() {
+        return {
+          get: mockDocGet,
+          set: mockDocSet,
+          update: mockDocUpdate,
+        };
+      })
+    };
+  }),
+  mockBatch: vi.fn(() => ({
+    set: vi.fn(),
+    commit: vi.fn(),
+  })),
   mockAdjustReputation: vi.fn(),
   mockDetectDuplicate: vi.fn(),
   mockCreateNotification: vi.fn(),
@@ -78,7 +95,7 @@ vi.mock('../lib/firebase', () => {
     serverTimestamp: () => ({ _type: 'serverTimestamp' }),
     increment: (n: number) => ({ _type: 'increment', operand: n }),
   };
-  const db = { collection: mockCollection };
+  const db = { collection: mockCollection, batch: mockBatch };
   return { db, FieldValue, bucket: {}, auth: {}, storage: {} };
 });
 
@@ -272,7 +289,7 @@ describe('Preservation 1 — AI happy path: response shape when API key present'
           'other',
         ),
         fc.constantFrom('low', 'medium', 'high', 'critical'),
-        fc.float({ min: 0.6, max: 1.0, noNaN: true }),
+        fc.float({ min: Math.fround(0.6), max: Math.fround(1.0), noNaN: true }),
         async (title, description, category, severity, confidence) => {
           global.fetch = vi
             .fn()

@@ -8,7 +8,7 @@ import { analyzeIssueMedia } from './geminiService';
 import { createNotification } from './notificationService';
 import { adjustReputation } from './reputationService';
 import { updateLeaderboardStats } from './leaderboardService';
-import { checkReportBadges } from './badgeService';
+import { checkAndAwardBadges, updateActivityStreak } from './badgeService';
 
 function mapAnalysisToAiSuggestion(analysis: IssueAnalysisResult) {
   return {
@@ -65,7 +65,8 @@ export async function enrichIssueOnCreate(issueId: string) {
 
   await adjustReputation(issue.reporterId, DEFAULT_REPUTATION.ISSUE_REPORTED);
   await updateLeaderboardStats(issue.reporterId, { issuesReported: 1 });
-  await checkReportBadges(issue.reporterId);
+  await updateActivityStreak(issue.reporterId);
+  await checkAndAwardBadges(issue.reporterId);
 
   if (duplicate) {
     await createNotification({

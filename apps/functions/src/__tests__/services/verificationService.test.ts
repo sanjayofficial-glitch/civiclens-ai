@@ -1,12 +1,14 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 const { mockRunTransaction, mockDb, mockServerTimestamp } = vi.hoisted(() => {
-  const mockDoc = vi.fn();
-  const mockCollection = vi.fn(() => ({ doc: mockDoc }));
   const mockRunTransaction = vi.fn();
   const mockDb = {
-    collection: mockCollection,
     runTransaction: mockRunTransaction,
+    collection: vi.fn(() => ({
+      doc: vi.fn(() => ({
+        get: vi.fn().mockResolvedValue({ exists: false }),
+      })),
+    })),
   };
   const mockServerTimestamp = vi.fn(() => ({ _method: 'serverTimestamp' }));
   return {

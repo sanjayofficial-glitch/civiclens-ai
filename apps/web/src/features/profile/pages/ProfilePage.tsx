@@ -20,7 +20,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { IssueCard } from '@/components/shared/IssueCard';
 import { Skeleton } from '@/components/ui/skeleton';
-import { BADGES } from '@/lib/constants';
+import { BADGES, getRankTitle } from '@/lib/constants';
 import { cn } from '@/lib/utils';
 
 import { useUser } from '@/hooks/data/useUser';
@@ -65,6 +65,8 @@ export default function ProfilePage() {
   const displayName = user?.displayName || authUser?.displayName || 'Citizen';
   const email = user?.email || authUser?.email || '';
   const photoURL = user?.photoURL ?? authUser?.photoURL ?? null;
+  const reputation = user?.reputation ?? 0;
+  const rank = getRankTitle(reputation);
 
   // Use live issue list length when available, fall back to user doc counter
   const reportCount = issueFilters
@@ -146,9 +148,13 @@ export default function ProfilePage() {
                 <h2 className="mt-3 text-xl font-bold">{displayName}</h2>
                 <p className="text-sm text-muted-foreground">{email}</p>
                 <div className="mt-3 flex flex-wrap justify-center gap-2">
+                  <Badge variant="secondary" className={cn("gap-1 font-semibold", rank.color)}>
+                    <Award className="size-3" aria-hidden="true" />
+                    {rank.title}
+                  </Badge>
                   <Badge variant="secondary" className="gap-1">
-                    <Trophy className="size-3 text-yellow-500" aria-hidden="true" />
-                    {(user?.reputation ?? 0).toLocaleString()} pts
+                    <Star className="size-3 text-yellow-500" aria-hidden="true" />
+                    {reputation.toLocaleString()} pts
                   </Badge>
                   <Badge variant="secondary">
                     🔥 {user?.streakDays ?? 0}-day streak

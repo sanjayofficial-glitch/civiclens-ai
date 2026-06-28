@@ -1,5 +1,5 @@
 import { FieldValue, db } from '../lib/firebase';
-import { checkVerificationBadges } from './badgeService';
+import { checkAndAwardBadges } from './badgeService';
 
 export async function registerVote(input: {
   issueId: string;
@@ -60,5 +60,5 @@ export async function registerVote(input: {
     );
   });
 
-  await checkVerificationBadges(input.userId);
+  await checkAndAwardBadges(input.userId);
 }
