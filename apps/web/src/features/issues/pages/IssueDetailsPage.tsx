@@ -476,7 +476,7 @@ export default function IssueDetailsPage() {
                         {c.userId.substring(0, 2).toUpperCase()}
                       </AvatarFallback>
                     </Avatar>
-                    <div className="flex-1 rounded-2xl glass-light px-3 py-2 border border-white/5">
+                    <div className="flex-1 rounded-2xl glass-light px-3 py-2 border border-white/5 dark:border-border/50">
                       <p className="text-xs font-medium">Citizen {c.userId.substring(0, 4).toUpperCase()}</p>
                       <p className="mt-0.5 text-sm">{c.text}</p>
                       <p className="mt-1 text-[10px] text-muted-foreground">

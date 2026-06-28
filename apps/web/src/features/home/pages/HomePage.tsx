@@ -167,7 +167,7 @@ export default function HomePage() {
 
         <motion.section variants={item} aria-label="Community statistics">
           <h2 className="mb-3 text-sm font-semibold">Community Impact</h2>
-          <div className="glass-medium rounded-2xl border border-white/5 p-4">
+          <div className="glass-medium rounded-2xl border border-white/5 dark:border-border/50 p-4">
             <div className="grid grid-cols-2 gap-4 text-center">
               <div>
                 <p className="text-2xl font-bold">
@@ -191,7 +191,7 @@ export default function HomePage() {
             {recentActivity.map((act, i) => (
               <div
                 key={i}
-                className="glass-light flex items-center gap-3 rounded-xl border border-white/5 p-3"
+                className="glass-light flex items-center gap-3 rounded-xl border border-white/5 dark:border-border/50 p-3"
               >
                 <div className={`grid size-9 place-items-center rounded-full bg-muted ${act.color}`}>
                   <act.icon className="size-4" aria-hidden="true" />

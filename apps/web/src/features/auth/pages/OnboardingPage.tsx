@@ -44,7 +44,7 @@ export default function OnboardingPage() {
 
   return (
     <AuthLayout>
-      <div className="glass-medium rounded-3xl border border-white/10 p-8 shadow-[var(--shadow-island)]">
+      <div className="glass-medium rounded-3xl border border-white/10 dark:border-border p-8 shadow-[var(--shadow-island)]">
         <AnimatePresence mode="wait">
           <motion.div
             key={step}
