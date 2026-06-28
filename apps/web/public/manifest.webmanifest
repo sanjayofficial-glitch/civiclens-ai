@@ -1,7 +1,7 @@
 {
-  "name": "Image to Favicon From Poper",
-  "short_name": "Image to Favicon From Poper",
-  "description": null,
+  "name": "Civic Lens",
+  "short_name": "Civic Lens",
+  "description": "Report civic issues. Build better communities.",
   "dir": "auto",
   "lang": "en-US",
   "display": "standalone",
@@ -11,15 +11,9 @@
   "theme_color": "#fff",
   "icons": [
     {
-      "src": "/android-chrome-192x192.png",
-      "sizes": "192x192",
-      "type": "image/png",
-      "purpose": "any"
-    },
-    {
-      "src": "/android-chrome-512x512.png",
-      "sizes": "512x512",
-      "type": "image/png",
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
       "purpose": "any"
     }
   ]
