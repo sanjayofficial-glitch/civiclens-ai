@@ -2,6 +2,7 @@ import { lazy, Suspense } from 'react';
 import { createBrowserRouter, RouterProvider } from 'react-router-dom';
 import { ProtectedRoute } from './components/layout/ProtectedRoute';
 import { PageLoader } from './components/layout/PageLoader';
+import { ErrorBoundary } from './components/ui/error-boundary';
 
 const SplashPage = lazy(() => import('@/features/auth/pages/SplashPage'));
 const OnboardingPage = lazy(() => import('@/features/auth/pages/OnboardingPage'));
@@ -24,7 +25,11 @@ const SettingsPage = lazy(() => import('@/features/profile/pages/SettingsPage'))
 const GovernmentDashboardPage = lazy(() => import('@/features/gov/pages/GovernmentDashboardPage'));
 
 function Lazy({ children }: { children: React.ReactNode }) {
-  return <Suspense fallback={<PageLoader />}>{children}</Suspense>;
+  return (
+    <ErrorBoundary>
+      <Suspense fallback={<PageLoader />}>{children}</Suspense>
+    </ErrorBoundary>
+  );
 }
 
 // eslint-disable-next-line react/only-export-components

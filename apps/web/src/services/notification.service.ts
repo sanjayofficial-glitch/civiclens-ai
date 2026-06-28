@@ -6,7 +6,7 @@ import { notificationConverter } from './converters';
 const NOTIFICATIONS_COLLECTION = 'notifications';
 
 export const NotificationService = {
-  listenToUserNotifications: (userId: string, callback: (notifications: (Notification & { id: string })[]) => void) => {
+  listenToUserNotifications: (userId: string, callback: (notifications: (Notification & { id: string })[]) => void, onError?: (error: Error) => void) => {
     const q = query(
       collection(db, NOTIFICATIONS_COLLECTION).withConverter(notificationConverter),
       where('userId', '==', userId),
@@ -15,7 +15,7 @@ export const NotificationService = {
     
     return onSnapshot(q, (snap) => {
       callback(snap.docs.map(doc => doc.data()));
-    });
+    }, onError);
   },
 
   markAsRead: async (notificationId: string) => {

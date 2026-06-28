@@ -15,7 +15,7 @@ export const CommentService = {
     } as Comment & { id: string });
   },
 
-  listenToIssueComments: (issueId: string, callback: (comments: (Comment & { id: string })[]) => void) => {
+  listenToIssueComments: (issueId: string, callback: (comments: (Comment & { id: string })[]) => void, onError?: (error: Error) => void) => {
     const q = query(
       collection(db, COMMENTS_COLLECTION).withConverter(commentConverter),
       where('issueId', '==', issueId)
@@ -25,7 +25,7 @@ export const CommentService = {
       const comments = snap.docs.map(doc => doc.data());
       comments.sort((a, b) => new Date(a.createdAt as string).getTime() - new Date(b.createdAt as string).getTime());
       callback(comments);
-    });
+    }, onError);
   },
 
   getIssueComments: async (issueId: string) => {

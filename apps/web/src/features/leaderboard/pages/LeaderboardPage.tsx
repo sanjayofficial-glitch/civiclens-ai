@@ -5,6 +5,9 @@ import { AppLayout, PageHeader } from '@/components/layout/AppLayout';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { EmptyState } from '@/components/ui/empty-state';
+import { ErrorState } from '@/components/ui/error-state';
 import { Card, CardContent } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useLeaderboard } from '@/hooks/data/useLeaderboard';
@@ -41,7 +44,7 @@ function RankMovement({ previousRank, currentRank }: { previousRank?: number; cu
 
 export default function LeaderboardPage() {
   const [period, setPeriod] = useState<LeaderboardPeriod>('weekly');
-  const { leaders, loading } = useLeaderboard(period, 50);
+  const { leaders, loading, error, refresh } = useLeaderboard(period, 50);
   const { user: authUser } = useAuth();
   const { user } = useUser();
   const entries = leaders as any[]; // Type assertion for extended fields
@@ -83,6 +86,10 @@ export default function LeaderboardPage() {
                     <Skeleton className="h-16 w-full rounded-xl" />
                     <Skeleton className="h-16 w-full rounded-xl" />
                   </div>
+                ) : error ? (
+                  <ErrorState title="Failed to load leaderboard" description={error.message} action={<Button onClick={refresh}>Try Again</Button>} />
+                ) : entries.length === 0 ? (
+                  <EmptyState icon={Trophy} title="No leaders yet" description="Be the first to contribute and earn your spot!" />
                 ) : (
                   <>
                     {myEntry && (

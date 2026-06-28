@@ -13,6 +13,8 @@ import { MapContainer, TileLayer, Marker } from 'react-leaflet';
 import L from 'leaflet';
 import { GovLayout } from '@/components/layout/AppLayout';
 import { Button } from '@/components/ui/button';
+import { EmptyState } from '@/components/ui/empty-state';
+import { ErrorState } from '@/components/ui/error-state';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -38,7 +40,7 @@ export default function GovernmentDashboardPage() {
   const [statusFilter, setStatusFilter] = useState<IssueStatus | 'all'>('all');
   const [search, setSearch] = useState('');
   
-  const { issues, loading: issuesLoading } = useIssues({}, 500);
+  const { issues, loading: issuesLoading, error: issuesError } = useIssues({}, 500);
   const { stats, loading: statsLoading } = useCommunityStats();
 
   const queue = issues.filter((i) => {
@@ -162,6 +164,10 @@ export default function GovernmentDashboardPage() {
               <div className="space-y-3">
                 {issuesLoading ? (
                   <p className="text-muted-foreground">Loading queue...</p>
+                ) : issuesError ? (
+                  <ErrorState title="Failed to load issues" description={issuesError.message} />
+                ) : queue.length === 0 ? (
+                  <EmptyState icon={Search} title="No issues found" description="Try adjusting your filters or search term." />
                 ) : queue.map((issue, i) => (
                   <motion.div
                     key={issue.id}

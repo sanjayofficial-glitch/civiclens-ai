@@ -15,6 +15,7 @@ import { AppLayout, PageHeader } from '@/components/layout/AppLayout';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { EmptyState } from '@/components/ui/empty-state';
+import { ErrorState } from '@/components/ui/error-state';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { formatRelativeTime } from '@/lib/constants';
 import { cn } from '@/lib/utils';
@@ -63,7 +64,7 @@ export default function NotificationsPage() {
   const [filter, setFilter] = useState<Filter>('all');
   const [page, setPage] = useState(1);
   const { user } = useAuth();
-  const { notifications: items, unreadCount, loading } = useNotifications();
+  const { notifications: items, unreadCount, loading, error: notifError, refresh: notifRefresh } = useNotifications();
 
   const filtered = useMemo(
     () => (filter === 'unread' ? items.filter((n) => !n.read) : items),
@@ -121,6 +122,8 @@ export default function NotificationsPage() {
               <Skeleton key={i} className="h-20 w-full rounded-xl" />
             ))}
           </div>
+        ) : notifError ? (
+          <ErrorState title="Failed to load notifications" description={notifError.message} action={<Button onClick={notifRefresh}>Try Again</Button>} />
         ) : filtered.length === 0 ? (
           <EmptyState
             icon={Bell}

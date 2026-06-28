@@ -8,6 +8,7 @@ import {
   ThumbsUp,
   ThumbsDown,
   MapPin,
+  MessageSquare,
   ChevronLeft,
   ChevronRight,
   Send,
@@ -28,6 +29,7 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Textarea } from '@/components/ui/textarea';
 import { Skeleton } from '@/components/ui/skeleton';
 import { ErrorState } from '@/components/ui/error-state';
+import { EmptyState } from '@/components/ui/empty-state';
 import { Separator } from '@/components/ui/separator';
 import {
   AlertDialog,
@@ -83,7 +85,7 @@ export default function IssueDetailsPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { issue, loading: issueLoading, error: issueError } = useIssue(id);
-  const { comments, loading: commentsLoading } = useComments(id);
+  const { comments, loading: commentsLoading, error: commentsError, refresh: refreshComments } = useComments(id);
   const { userVote, setUserVote } = useUserVote(id);
   const { user } = useAuth();
 
@@ -464,6 +466,8 @@ export default function IssueDetailsPage() {
                   <Skeleton className="h-16 w-full rounded-xl" />
                   <Skeleton className="h-16 w-full rounded-xl" />
                 </>
+              ) : commentsError ? (
+                <ErrorState title="Failed to load comments" description={commentsError.message} action={<Button onClick={refreshComments} size="sm">Retry</Button>} />
               ) : comments.length > 0 ? (
                 comments.map((c) => (
                   <div key={c.id} className="flex gap-3">
@@ -482,7 +486,7 @@ export default function IssueDetailsPage() {
                   </div>
                 ))
               ) : (
-                <p className="text-sm text-muted-foreground">No comments yet. Be the first!</p>
+                <EmptyState icon={MessageSquare} title="No comments yet" description="Be the first to share your thoughts!" />
               )}
             </div>
 

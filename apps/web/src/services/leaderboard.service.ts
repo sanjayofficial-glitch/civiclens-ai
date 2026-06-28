@@ -5,7 +5,7 @@ import { leaderboardConverter } from './converters';
 const LEADERS_COLLECTION = 'leaderboard';
 
 export const LeaderboardService = {
-  listenToLeaderboard: (period: string, limitCount = 50, callback: (entries: any[]) => void) => {
+  listenToLeaderboard: (period: string, limitCount = 50, callback: (entries: any[]) => void, onError?: (error: Error) => void) => {
     const q = query(
       collection(db, LEADERS_COLLECTION).withConverter(leaderboardConverter),
       where('period', '==', period),
@@ -25,6 +25,6 @@ export const LeaderboardService = {
           period: data.period,
         };
       }));
-    });
+    }, onError);
   }
 };
