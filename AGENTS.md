@@ -1,6 +1,6 @@
 # BlockSeBlock — Complete Codebase Memory
 
-> **🕐 Last Updated:** 2025-07-18
+> **🕐 Last Updated:** 2026-06-28
 > **🧹 Lint Status:** ✅ 0 warnings, 0 errors
 > **🏗️ Build Status:** ✅ Passes cleanly on `npm run build`
 > **🧪 Test Status:** ✅ 21 tests, 4 test files — `vitest run` in `apps/functions`
@@ -119,6 +119,33 @@ Firebase (Firestore + Auth + Storage + Cloud Functions + Hosting)
 **Leaderboard scoring:** Period-based aggregation includes issues + verifications + votes + comments + resolution bonus. Rank tracking via `currentRank` + `previousRank` fields with tie handling (same score = same rank).
 
 **Firestore query simplification:** `CommentService` removed `orderBy('createdAt')` from queries — sorts client-side to avoid requiring a composite Firestore index.
+
+---
+
+## Session Memory: Hook Lint Fixes (2026-06-28)
+
+**Problem:** 3 hook files (`useComments.ts`, `useLeaderboard.ts`, `useNotifications.ts`) in `apps/web/src/hooks/data/` had lint errors from `import/order`, `prettier/prettier`, `@typescript-eslint/no-confusing-void-expression`, and `@typescript-eslint/array-type`.
+
+**Fixes applied:**
+| File | Fix |
+|------|-----|
+| `useComments.ts` | Moved `import type { Comment }` above `react`, fixed prettier void-block formatting, fixed void-return callback |
+| `useLeaderboard.ts` | Moved `import type { LeaderboardPeriod }` above `react`, `Array<T>` → `T[]`, fixed void-return callback |
+| `useNotifications.ts` | Moved `import type { Notification }` above `react`, fixed prettier void-block formatting, fixed void-return callback |
+
+**Key patterns:**
+- `import type` from `@blockseblock/shared` goes in the `type` group — must be before the `external` group (`react`, etc.) with a blank line between
+- `.filter(n => ...)` → `.filter((n) => ...)` — Prettier requires parens around single arrow params inside expressions
+- `() => { expr; }` → multi-line `() => {\n  expr;\n}` — Prettier rejects single-line arrow bodies with braces
+- `useCallback(() => expr, [])` → `useCallback(() => { expr; }, [])` — void-expression rule disallows returning void from arrow shorthand
+- Lint command: `npx eslint <files> --no-ignore` (avoid `--fix` — apply fixes manually to verify correctness)
+- Check specific files: `npx eslint path/to/file1.ts path/to/file2.ts --no-ignore`
+
+**Current status:** 0 warnings/errors in hook files. ~1614 pre-existing errors remain across the rest of `apps/web/` (unrelated to these changes).
+
+**Eslint config context:** Root `eslint.config.mjs` defines import groups: `builtin` → `type` → `external` → `internal` → `parent` → `sibling` → `index` with `newlines-between: always` and alphabetical ordering. The `@blockseblock/shared` package resolves as `external`, not `internal`.
+
+**Remaining:** Pre-existing errors in `apps/web/` need a project-wide lint pass. The functions package has an OOM issue with ESLint's type-checked config on Windows.
 
 ---
 
