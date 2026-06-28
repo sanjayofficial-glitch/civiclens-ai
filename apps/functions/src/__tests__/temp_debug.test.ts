@@ -1,5 +1,7 @@
-import { describe, it } from 'vitest';
+/* eslint-disable no-console, @typescript-eslint/restrict-template-expressions */
+
 import * as admin from 'firebase-admin';
+import { describe, it } from 'vitest';
 
 describe('Debug Database', () => {
   it('prints all issues', async () => {
@@ -9,16 +11,16 @@ describe('Debug Database', () => {
     if (admin.apps.length === 0) {
       admin.initializeApp({
         projectId: 'blockseblock-dev',
-        storageBucket: 'blockseblock-dev.appspot.com'
+        storageBucket: 'blockseblock-dev.appspot.com',
       });
     }
 
     const { db } = await import('../lib/firebase');
 
-    console.log("=== START DATABASE DUMP ===");
+    console.log('=== START DATABASE DUMP ===');
     const snapshot = await db.collection('issues').get();
     console.log(`Total Issues Found: ${snapshot.size}`);
-    snapshot.forEach(doc => {
+    snapshot.forEach((doc) => {
       const data = doc.data();
       console.log(`\nIssue ID: ${doc.id}`);
       console.log(`Title: ${data.title}`);
@@ -26,6 +28,6 @@ describe('Debug Database', () => {
       console.log(`Media: ${JSON.stringify(data.media)}`);
       console.log(`aiAnalysis: ${JSON.stringify(data.aiAnalysis)}`);
     });
-    console.log("=== END DATABASE DUMP ===");
+    console.log('=== END DATABASE DUMP ===');
   });
 });

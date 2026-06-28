@@ -1,14 +1,23 @@
-import { onDocumentCreated, FirestoreEvent } from 'firebase-functions/v2/firestore';
-import { QueryDocumentSnapshot } from 'firebase-admin/firestore';
+import type { QueryDocumentSnapshot } from 'firebase-admin/firestore';
+import type { FirestoreEvent } from 'firebase-functions/v2/firestore';
 
-import { enrichIssueOnCreate } from '../services/issueService';
+import { onDocumentCreated } from 'firebase-functions/v2/firestore';
+
 import { log } from '../lib/logger';
-import { recordDailyMetrics, recordCategoryMetrics, recordStatusMetrics } from '../services/analyticsService';
+import {
+  recordDailyMetrics,
+  recordCategoryMetrics,
+  recordStatusMetrics,
+} from '../services/analyticsService';
+import { enrichIssueOnCreate } from '../services/issueService';
 
 export const onIssueCreated = onDocumentCreated(
   'issues/{issueId}',
   async (
-    event: FirestoreEvent<QueryDocumentSnapshot | undefined, { issueId: string }>,
+    event: FirestoreEvent<
+      QueryDocumentSnapshot | undefined,
+      { issueId: string }
+    >,
   ) => {
     const issueId = event.params.issueId;
     const snap = event.data;
@@ -27,4 +36,3 @@ export const onIssueCreated = onDocumentCreated(
     ]);
   },
 );
-

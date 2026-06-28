@@ -1,18 +1,23 @@
-import { GEMINI_MAX_RETRIES, GEMINI_MODEL, GEMINI_TIMEOUT_MS } from '../config';
-import { fail } from '../lib/errors';
-import { fetchFileBuffer } from './storageService';
 import type { IssueAnalysisResult } from '../types';
 
-type GeminiPart = {
+import { GEMINI_MAX_RETRIES, GEMINI_MODEL, GEMINI_TIMEOUT_MS } from '../config';
+import { fail } from '../lib/errors';
+
+import { fetchFileBuffer } from './storageService';
+
+interface GeminiPart {
   text?: string;
   inlineData?: {
     mimeType: string;
     data: string;
   };
-};
+}
 
 function stripMarkdownJson(input: string) {
-  return input.replace(/```json\s*/g, '').replace(/```/g, '').trim();
+  return input
+    .replace(/```json\s*/g, '')
+    .replace(/```/g, '')
+    .trim();
 }
 
 function fallbackAnalysis(input: {
@@ -21,25 +26,28 @@ function fallbackAnalysis(input: {
   imageUrls: string[];
 }): IssueAnalysisResult {
   const text = `${input.title} ${input.description}`.toLowerCase();
-  const category =
-    text.includes('pothole')
-      ? 'pothole'
-      : text.includes('light') || text.includes('streetlight')
-        ? 'streetlight'
-        : text.includes('water') || text.includes('leak')
-          ? 'water_leak'
-          : text.includes('trash') || text.includes('garbage')
-            ? 'garbage'
-            : text.includes('graffiti')
-              ? 'graffiti'
-              : text.includes('sidewalk')
-                ? 'sidewalk'
-                : 'other';
+  const category = text.includes('pothole')
+    ? 'pothole'
+    : text.includes('light') || text.includes('streetlight')
+      ? 'streetlight'
+      : text.includes('water') || text.includes('leak')
+        ? 'water_leak'
+        : text.includes('trash') || text.includes('garbage')
+          ? 'garbage'
+          : text.includes('graffiti')
+            ? 'graffiti'
+            : text.includes('sidewalk')
+              ? 'sidewalk'
+              : 'other';
 
   const severity =
-    text.includes('critical') || text.includes('danger') || text.includes('urgent')
+    text.includes('critical') ||
+    text.includes('danger') ||
+    text.includes('urgent')
       ? 'critical'
-      : text.includes('high') || text.includes('blocked') || text.includes('broken')
+      : text.includes('high') ||
+          text.includes('blocked') ||
+          text.includes('broken')
         ? 'high'
         : text.includes('medium')
           ? 'medium'
@@ -53,7 +61,10 @@ function fallbackAnalysis(input: {
     description: input.description.slice(0, 500),
     suggestedTags: [category, severity],
     duplicateScore: 0.1,
-    safetyConcern: text.includes('fire') || text.includes('accident') || text.includes('hazard'),
+    safetyConcern:
+      text.includes('fire') ||
+      text.includes('accident') ||
+      text.includes('hazard'),
   };
 }
 
@@ -64,7 +75,9 @@ async function callGemini(parts: GeminiPart[]): Promise<string> {
   }
 
   const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), GEMINI_TIMEOUT_MS);
+  const timeout = setTimeout(() => {
+    controller.abort();
+  }, GEMINI_TIMEOUT_MS);
 
   try {
     const response = await fetch(
@@ -89,11 +102,13 @@ async function callGemini(parts: GeminiPart[]): Promise<string> {
     );
 
     if (!response.ok) {
-      throw new Error(`Gemini request failed with status ${response.status}`);
+      throw new Error(
+        `Gemini request failed with status ${String(response.status)}`,
+      );
     }
 
     const payload = (await response.json()) as {
-      candidates?: Array<{ content?: { parts?: Array<{ text?: string }> } }>;
+      candidates?: { content?: { parts?: { text?: string }[] } }[];
     };
 
     const text = payload.candidates?.[0]?.content?.parts?.[0]?.text;
@@ -112,7 +127,7 @@ export async function analyzeIssueMedia(input: {
   description: string;
   imageUrls: string[];
   locationText?: string;
-}) : Promise<IssueAnalysisResult> {
+}): Promise<IssueAnalysisResult> {
   const imageParts: GeminiPart[] = [];
   for (const url of input.imageUrls.slice(0, 3)) {
     try {
@@ -147,13 +162,10 @@ export async function analyzeIssueMedia(input: {
   let lastError: unknown;
   for (let attempt = 0; attempt <= GEMINI_MAX_RETRIES; attempt += 1) {
     try {
-      const raw = await callGemini([
-        { text: prompt },
-        ...imageParts,
-      ]);
+      const raw = await callGemini([{ text: prompt }, ...imageParts]);
 
       const parsed = JSON.parse(stripMarkdownJson(raw)) as IssueAnalysisResult;
-      if (!parsed.category || !parsed.severity || typeof parsed.confidence !== 'number') {
+      if (!parsed.category || typeof parsed.confidence !== 'number') {
         throw new Error('Gemini response is missing required fields.');
       }
 

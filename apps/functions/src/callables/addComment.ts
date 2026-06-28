@@ -2,8 +2,8 @@ import { onCall } from 'firebase-functions/v2/https';
 import { z } from 'zod';
 
 import { assertAuth } from '../lib/errors';
-import { parseInput } from '../lib/validation';
 import { FieldValue, db } from '../lib/firebase';
+import { parseInput } from '../lib/validation';
 
 const schema = z.object({
   issueId: z.string().min(1),

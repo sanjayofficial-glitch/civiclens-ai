@@ -1,4 +1,5 @@
 import { FieldValue } from '../lib/firebase';
+
 import { BaseRepository } from './baseRepository';
 
 export interface AnalyticsBucketRecord {
@@ -37,4 +38,3 @@ export class AnalyticsRepository extends BaseRepository<AnalyticsBucketRecord> {
     );
   }
 }
-

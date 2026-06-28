@@ -1,4 +1,5 @@
 import { FieldValue } from '../lib/firebase';
+
 import { BaseRepository } from './baseRepository';
 
 export interface BackendLeaderboardRecord {
@@ -29,4 +30,3 @@ export class LeaderboardRepository extends BaseRepository<BackendLeaderboardReco
     );
   }
 }
-

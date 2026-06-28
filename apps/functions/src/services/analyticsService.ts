@@ -1,4 +1,3 @@
-import { Timestamp } from 'firebase-admin/firestore';
 import { db, FieldValue } from '../lib/firebase';
 
 export async function recordAnalyticsEvent(
@@ -14,15 +13,18 @@ export async function recordAnalyticsEvent(
     {},
   );
 
-  await db.collection('analytics').doc(docId).set(
-    {
-      key: docId,
-      scope,
-      ...updates,
-      updatedAt: FieldValue.serverTimestamp(),
-    },
-    { merge: true },
-  );
+  await db
+    .collection('analytics')
+    .doc(docId)
+    .set(
+      {
+        key: docId,
+        scope,
+        ...updates,
+        updatedAt: FieldValue.serverTimestamp(),
+      },
+      { merge: true },
+    );
 }
 
 export function dailyDocId(date?: Date): string {
@@ -30,7 +32,7 @@ export function dailyDocId(date?: Date): string {
   const y = d.getFullYear();
   const m = String(d.getMonth() + 1).padStart(2, '0');
   const day = String(d.getDate()).padStart(2, '0');
-  return `daily_${y}-${m}-${day}`;
+  return `daily_${String(y)}-${m}-${day}`;
 }
 
 export async function recordDailyMetrics(
@@ -51,4 +53,3 @@ export async function recordStatusMetrics(status: string) {
     issueCount: 1,
   });
 }
-

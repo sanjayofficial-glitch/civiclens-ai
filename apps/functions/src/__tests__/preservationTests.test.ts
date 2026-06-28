@@ -16,8 +16,10 @@
  * Validates: Requirements 3.3, 3.4, 3.5, 3.6, 3.8
  */
 
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import type * as ErrorsModule from '../lib/errors';
+
 import fc from 'fast-check';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 
 // ---------------------------------------------------------------------------
 // Module mocks — declared before imports
@@ -39,12 +41,14 @@ vi.mock('../config', () => ({
 
 // Real fail() so HttpsError propagates as in production
 vi.mock('../lib/errors', async () => {
-  const actual = await vi.importActual<typeof import('../lib/errors')>('../lib/errors');
+  const actual = await vi.importActual<typeof ErrorsModule>('../lib/errors');
   return actual;
 });
 
 // fetchFileBuffer mock — controlled per test
-const { mockFetchFileBuffer } = vi.hoisted(() => ({ mockFetchFileBuffer: vi.fn() }));
+const { mockFetchFileBuffer } = vi.hoisted(() => ({
+  mockFetchFileBuffer: vi.fn(),
+}));
 vi.mock('../services/storageService', () => ({
   fetchFileBuffer: mockFetchFileBuffer,
   buildUploadPath: vi.fn(),
@@ -53,15 +57,21 @@ vi.mock('../services/storageService', () => ({
 }));
 
 // Firestore/Firebase mock
-const { mockDocGet, mockDocSet, mockCollection, mockAdjustReputation, mockDetectDuplicate, mockCreateNotification } =
-  vi.hoisted(() => ({
-    mockDocGet: vi.fn(),
-    mockDocSet: vi.fn(),
-    mockCollection: vi.fn(),
-    mockAdjustReputation: vi.fn(),
-    mockDetectDuplicate: vi.fn(),
-    mockCreateNotification: vi.fn(),
-  }));
+const {
+  mockDocGet,
+  mockDocSet,
+  mockCollection,
+  mockAdjustReputation,
+  mockDetectDuplicate,
+  mockCreateNotification,
+} = vi.hoisted(() => ({
+  mockDocGet: vi.fn(),
+  mockDocSet: vi.fn(),
+  mockCollection: vi.fn(),
+  mockAdjustReputation: vi.fn(),
+  mockDetectDuplicate: vi.fn(),
+  mockCreateNotification: vi.fn(),
+}));
 
 vi.mock('../lib/firebase', () => {
   const FieldValue = {
@@ -173,32 +183,47 @@ describe('Preservation 1 — AI happy path: response shape when API key present'
     const result = await analyzeIssueMedia({
       title: 'Pothole on Baker Street',
       description: 'A deep pothole near the school crossing.',
-      imageUrls: ['https://firebasestorage.googleapis.com/v0/b/test/o/issues%2Fphoto.jpg?alt=media&token=abc'],
+      imageUrls: [
+        'https://firebasestorage.googleapis.com/v0/b/test/o/issues%2Fphoto.jpg?alt=media&token=abc',
+      ],
     });
 
     // Minimal shape present on unfixed AND fixed code
     expect(result.category, 'category must be a non-empty string').toBeTruthy();
     expect(typeof result.category).toBe('string');
 
-    expect(result.severity, 'severity must be one of: low, medium, high, critical').toMatch(
-      /^(low|medium|high|critical)$/,
-    );
+    expect(
+      result.severity,
+      'severity must be one of: low, medium, high, critical',
+    ).toMatch(/^(low|medium|high|critical)$/);
 
-    expect(typeof result.confidence, 'confidence must be a number').toBe('number');
-    expect(result.confidence, 'confidence must be between 0 and 1').toBeGreaterThanOrEqual(0);
+    expect(typeof result.confidence, 'confidence must be a number').toBe(
+      'number',
+    );
+    expect(
+      result.confidence,
+      'confidence must be between 0 and 1',
+    ).toBeGreaterThanOrEqual(0);
     expect(result.confidence).toBeLessThanOrEqual(1);
 
-    expect(Array.isArray(result.suggestedTags), 'suggestedTags must be an array').toBe(true);
+    expect(
+      Array.isArray(result.suggestedTags),
+      'suggestedTags must be an array',
+    ).toBe(true);
   });
 
   it('analyzeIssueMedia with valid API key returns confidence >= 0.6 for a real Gemini result', async () => {
     process.env.GEMINI_API_KEY = 'test-key-present';
-    global.fetch = vi.fn().mockResolvedValue(makeMockGeminiResponse({ confidence: 0.92 }));
+    global.fetch = vi
+      .fn()
+      .mockResolvedValue(makeMockGeminiResponse({ confidence: 0.92 }));
 
     const result = await analyzeIssueMedia({
       title: 'Streetlight out',
       description: 'Streetlight on Main Road has been out for 3 days.',
-      imageUrls: ['https://firebasestorage.googleapis.com/v0/b/test/o/issues%2Fphoto.jpg?alt=media&token=xyz'],
+      imageUrls: [
+        'https://firebasestorage.googleapis.com/v0/b/test/o/issues%2Fphoto.jpg?alt=media&token=xyz',
+      ],
     });
 
     expect(result.confidence).toBeGreaterThanOrEqual(0.6);
@@ -206,7 +231,9 @@ describe('Preservation 1 — AI happy path: response shape when API key present'
 
   it('analyzeIssueMedia with no imageUrls still returns a valid result (text-only analysis)', async () => {
     process.env.GEMINI_API_KEY = 'test-key-present';
-    global.fetch = vi.fn().mockResolvedValue(makeMockGeminiResponse({ confidence: 0.75 }));
+    global.fetch = vi
+      .fn()
+      .mockResolvedValue(makeMockGeminiResponse({ confidence: 0.75 }));
 
     const result = await analyzeIssueMedia({
       title: 'Water leak on Oak Avenue',
@@ -235,15 +262,29 @@ describe('Preservation 1 — AI happy path: response shape when API key present'
         fc.string({ minLength: 3, maxLength: 80 }),
         fc.string({ minLength: 3, maxLength: 200 }),
         // Random valid category/severity for Gemini response
-        fc.constantFrom('pothole', 'streetlight', 'water_leak', 'garbage', 'graffiti', 'sidewalk', 'other'),
+        fc.constantFrom(
+          'pothole',
+          'streetlight',
+          'water_leak',
+          'garbage',
+          'graffiti',
+          'sidewalk',
+          'other',
+        ),
         fc.constantFrom('low', 'medium', 'high', 'critical'),
         fc.float({ min: 0.6, max: 1.0, noNaN: true }),
         async (title, description, category, severity, confidence) => {
-          global.fetch = vi.fn().mockResolvedValue(
-            makeMockGeminiResponse({ category, severity, confidence }),
-          );
+          global.fetch = vi
+            .fn()
+            .mockResolvedValue(
+              makeMockGeminiResponse({ category, severity, confidence }),
+            );
 
-          const result = await analyzeIssueMedia({ title, description, imageUrls: [] });
+          const result = await analyzeIssueMedia({
+            title,
+            description,
+            imageUrls: [],
+          });
 
           // Minimal shape must always hold
           expect(typeof result.category).toBe('string');
@@ -278,11 +319,16 @@ describe('Preservation 2 — UploadService.uploadFile passes path through unchan
   it('uploadFile forwards the exact path to Firebase Storage ref', async () => {
     // We test the path-forwarding behavior by checking the ref() call.
     // This behavior must NOT change after Fix 2.
-    const { ref: mockRef, uploadBytesResumable, getDownloadURL } = await import('firebase/storage');
+    const {
+      ref: _mockRef,
+      uploadBytesResumable: _uploadBytesResumable,
+      getDownloadURL: _getDownloadURL,
+    } = await import('firebase/storage');
 
     const testPath = 'issues/1720000000000_0_abc123';
     const file = new File(['fake-data'], 'photo.jpg', { type: 'image/jpeg' });
-    const expectedUrl = 'https://firebasestorage.googleapis.com/v0/b/test/o/photo.jpg?alt=media';
+    const expectedUrl =
+      'https://firebasestorage.googleapis.com/v0/b/test/o/photo.jpg?alt=media';
 
     // Verify the mock ref was called with the exact path
     // (The actual UploadService test lives in web tests — this is a shape/contract test)
@@ -309,7 +355,9 @@ describe('Preservation 2 — UploadService.uploadFile passes path through unchan
           // The returned URL is always https://firebasestorage.googleapis.com/...
           // This is a Firebase SDK guarantee — not affected by caller-side fix.
           const mockReturnUrl = `https://firebasestorage.googleapis.com/v0/b/test/o/${encodeURIComponent(path)}?alt=media`;
-          expect(mockReturnUrl).toMatch(/^https:\/\/firebasestorage\.googleapis\.com/);
+          expect(mockReturnUrl).toMatch(
+            /^https:\/\/firebasestorage\.googleapis\.com/,
+          );
           expect(typeof path).toBe('string');
           expect(path.length).toBeGreaterThan(0);
         },
@@ -337,7 +385,10 @@ describe('Preservation 3 — Manual location not overwritten when hasCustomLocat
   it('when hasCustomLocation=true, the geolocation auto-detect condition is not triggered', () => {
     // Simulate the ReportWizardPage useEffect guard logic
     // The unfixed code checks: if (draft.step === 2 && !draft.hasCustomLocation)
-    function shouldAutoDetect(draft: { step: number; hasCustomLocation: boolean }): boolean {
+    function shouldAutoDetect(draft: {
+      step: number;
+      hasCustomLocation: boolean;
+    }): boolean {
       return draft.step === 2 && !draft.hasCustomLocation;
     }
 
@@ -560,17 +611,26 @@ describe('Preservation 4 — onIssueCreated trigger side-effects are independent
   it('PBT: for any issue, reputation and duplicate detection are always invoked by enrichIssueOnCreate', async () => {
     await fc.assert(
       fc.asyncProperty(
-        fc.string({ minLength: 3, maxLength: 60 }),   // title
-        fc.string({ minLength: 3, maxLength: 200 }),  // description
-        fc.string({ minLength: 5, maxLength: 10 }),   // geohash
-        fc.constantFrom('pothole', 'streetlight', 'water_leak', 'garbage', 'graffiti', 'other'),
+        fc.string({ minLength: 3, maxLength: 60 }), // title
+        fc.string({ minLength: 3, maxLength: 200 }), // description
+        fc.string({ minLength: 5, maxLength: 10 }), // geohash
+        fc.constantFrom(
+          'pothole',
+          'streetlight',
+          'water_leak',
+          'garbage',
+          'graffiti',
+          'other',
+        ),
         async (title, description, geohash, category) => {
           vi.clearAllMocks();
 
           mockAdjustReputation.mockResolvedValue(undefined);
           mockDetectDuplicate.mockResolvedValue(null);
           mockCreateNotification.mockResolvedValue(undefined);
-          global.fetch = vi.fn().mockResolvedValue(makeMockGeminiResponse({ category }));
+          global.fetch = vi
+            .fn()
+            .mockResolvedValue(makeMockGeminiResponse({ category }));
 
           const issueId = `issue-pbt-${Math.random().toString(36).slice(2)}`;
           const reporterId = `user-pbt-${Math.random().toString(36).slice(2)}`;
@@ -644,9 +704,15 @@ describe('Preservation 5 — fallback analysis returns valid shape when Gemini f
         fc.string({ minLength: 1, maxLength: 100 }),
         fc.string({ minLength: 1, maxLength: 300 }),
         async (title, description) => {
-          global.fetch = vi.fn().mockRejectedValue(new Error('simulated failure'));
+          global.fetch = vi
+            .fn()
+            .mockRejectedValue(new Error('simulated failure'));
 
-          const result = await analyzeIssueMedia({ title, description, imageUrls: [] });
+          const result = await analyzeIssueMedia({
+            title,
+            description,
+            imageUrls: [],
+          });
 
           // Must always return a valid structured result (never throws)
           expect(result).toBeDefined();

@@ -1,5 +1,4 @@
-import { FieldValue } from '../lib/firebase';
-import { db } from '../lib/firebase';
+import { FieldValue, db } from '../lib/firebase';
 
 export async function registerVote(input: {
   issueId: string;
@@ -29,12 +28,21 @@ export async function registerVote(input: {
     });
 
     const issue = issueSnap.data() as {
-      verification?: { upvotes?: number; downvotes?: number; verifiedBy?: string[] };
+      verification?: {
+        upvotes?: number;
+        downvotes?: number;
+        verifiedBy?: string[];
+      };
     };
 
-    const upvotes = Number(issue.verification?.upvotes ?? 0) + (input.type === 'upvote' ? 1 : 0);
-    const downvotes = Number(issue.verification?.downvotes ?? 0) + (input.type === 'downvote' ? 1 : 0);
-    const verifiedBy = Array.from(new Set([...(issue.verification?.verifiedBy ?? []), input.userId]));
+    const upvotes =
+      (issue.verification?.upvotes ?? 0) + (input.type === 'upvote' ? 1 : 0);
+    const downvotes =
+      (issue.verification?.downvotes ?? 0) +
+      (input.type === 'downvote' ? 1 : 0);
+    const verifiedBy = Array.from(
+      new Set([...(issue.verification?.verifiedBy ?? []), input.userId]),
+    );
 
     transaction.set(
       issueRef,

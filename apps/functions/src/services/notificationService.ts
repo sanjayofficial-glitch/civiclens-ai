@@ -25,4 +25,3 @@ export async function markNotificationRead(notificationId: string) {
     readAt: FieldValue.serverTimestamp(),
   });
 }
-

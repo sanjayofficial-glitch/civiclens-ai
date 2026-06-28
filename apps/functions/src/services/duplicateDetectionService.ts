@@ -1,5 +1,6 @@
-import { db } from '../lib/firebase';
 import type { DuplicateMatch } from '../types';
+
+import { db } from '../lib/firebase';
 
 function normalize(value: string) {
   return value
@@ -43,11 +44,22 @@ export async function detectDuplicateIssue(input: {
 
   snapshot.forEach((doc) => {
     const data = doc.data();
-    const geohash = String(data.location?.geohash ?? '');
-    const titleScore = similarity(input.title, String(data.title ?? ''));
-    const descriptionScore = similarity(input.description, String(data.description ?? ''));
+    const locationData = data.location as Record<string, unknown> | undefined;
+    const geohash =
+      typeof locationData?.geohash === 'string' ? locationData.geohash : '';
+    const titleScore = similarity(
+      input.title,
+      (data.title as string | undefined) ?? '',
+    );
+    const descriptionScore = similarity(
+      input.description,
+      (data.description as string | undefined) ?? '',
+    );
     const locationScore = geohash.startsWith(prefix) ? 1 : 0;
-    const score = Math.min(1, titleScore * 0.45 + descriptionScore * 0.35 + locationScore * 0.2);
+    const score = Math.min(
+      1,
+      titleScore * 0.45 + descriptionScore * 0.35 + locationScore * 0.2,
+    );
 
     if (score >= 0.45) {
       matches.push({
@@ -61,4 +73,3 @@ export async function detectDuplicateIssue(input: {
   matches.sort((left, right) => right.score - left.score);
   return matches[0] ?? null;
 }
-

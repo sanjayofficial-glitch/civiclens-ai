@@ -12,4 +12,3 @@ export class CommentRepository extends BaseRepository<BackendCommentRecord> {
     super('comments');
   }
 }
-

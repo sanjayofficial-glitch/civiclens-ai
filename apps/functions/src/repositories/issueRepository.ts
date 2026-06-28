@@ -37,4 +37,3 @@ export class IssueRepository extends BaseRepository<BackendIssueRecord> {
     super('issues');
   }
 }
-

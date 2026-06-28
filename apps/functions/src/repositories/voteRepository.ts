@@ -16,4 +16,3 @@ export class VoteRepository extends BaseRepository<BackendVoteRecord> {
     return this.doc(`${issueId}_${userId}`);
   }
 }
-

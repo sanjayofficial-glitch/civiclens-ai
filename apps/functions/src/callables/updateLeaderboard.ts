@@ -15,7 +15,10 @@ export const updateLeaderboard = onCall(async (request) => {
 
   const role = normalizeRole((request.auth.token as { role?: unknown }).role);
   if (!isPrivilegedRole(role)) {
-    fail('permission-denied', 'Only moderators and admins can rebuild leaderboards.');
+    fail(
+      'permission-denied',
+      'Only moderators and admins can rebuild leaderboards.',
+    );
   }
 
   const input = parseInput<{ period: 'weekly' | 'monthly' | 'all_time' }>(

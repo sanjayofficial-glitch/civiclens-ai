@@ -1,17 +1,29 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
-const { mockCreate, mockDocUpdate, mockDoc, mockNotificationRepoImpl, mockServerTimestamp } = vi.hoisted(() => {
+const {
+  mockCreate,
+  mockDocUpdate,
+  mockDoc,
+  mockNotificationRepoImpl,
+  mockServerTimestamp,
+} = vi.hoisted(() => {
   const mockCreate = vi.fn();
   const mockDocUpdate = vi.fn();
   const mockDoc = vi.fn(() => ({ update: mockDocUpdate }));
-  const mockNotificationRepoImpl = vi.fn(function() {
+  const mockNotificationRepoImpl = vi.fn(function () {
     return {
       create: mockCreate,
       doc: mockDoc,
     };
   });
   const mockServerTimestamp = vi.fn(() => ({ _method: 'serverTimestamp' }));
-  return { mockCreate, mockDocUpdate, mockDoc, mockNotificationRepoImpl, mockServerTimestamp };
+  return {
+    mockCreate,
+    mockDocUpdate,
+    mockDoc,
+    mockNotificationRepoImpl,
+    mockServerTimestamp,
+  };
 });
 
 vi.mock('../../repositories/notificationRepository', () => ({
@@ -22,7 +34,10 @@ vi.mock('../../lib/firebase', () => ({
   FieldValue: { serverTimestamp: mockServerTimestamp },
 }));
 
-import { createNotification, markNotificationRead } from '../../services/notificationService';
+import {
+  createNotification,
+  markNotificationRead,
+} from '../../services/notificationService';
 
 beforeEach(() => {
   vi.clearAllMocks();

@@ -1,11 +1,12 @@
-import { FieldValue } from '../lib/firebase';
-import { db } from '../lib/firebase';
-import { analyzeIssueMedia } from './geminiService';
+import type { IssueAnalysisResult } from '../types';
+
+import { DEFAULT_REPUTATION } from '../config';
+import { FieldValue, db } from '../lib/firebase';
+
 import { detectDuplicateIssue } from './duplicateDetectionService';
+import { analyzeIssueMedia } from './geminiService';
 import { createNotification } from './notificationService';
 import { adjustReputation } from './reputationService';
-import { DEFAULT_REPUTATION } from '../config';
-import type { IssueAnalysisResult } from '../types';
 
 function mapAnalysisToAiSuggestion(analysis: IssueAnalysisResult) {
   return {
@@ -38,7 +39,7 @@ export async function enrichIssueOnCreate(issueId: string) {
     ? await detectDuplicateIssue({
         title: issue.title,
         description: issue.description,
-        category: String(issue.category ?? 'other'),
+        category: issue.category ?? 'other',
         geohash: issue.location.geohash,
       })
     : null;
@@ -77,19 +78,27 @@ export async function enrichIssueOnCreate(issueId: string) {
   }
 }
 
-export async function updateIssueVerification(issueId: string, verifiedBy: string[], upvotes: number, downvotes: number) {
+export async function updateIssueVerification(
+  issueId: string,
+  verifiedBy: string[],
+  upvotes: number,
+  downvotes: number,
+) {
   const status = upvotes > downvotes ? 'verified' : 'reported';
-  await db.collection('issues').doc(issueId).set(
-    {
-      status,
-      verification: {
-        upvotes,
-        downvotes,
-        verifiedBy,
-        verifiedAt: FieldValue.serverTimestamp(),
+  await db
+    .collection('issues')
+    .doc(issueId)
+    .set(
+      {
+        status,
+        verification: {
+          upvotes,
+          downvotes,
+          verifiedBy,
+          verifiedAt: FieldValue.serverTimestamp(),
+        },
+        updatedAt: FieldValue.serverTimestamp(),
       },
-      updatedAt: FieldValue.serverTimestamp(),
-    },
-    { merge: true },
-  );
+      { merge: true },
+    );
 }

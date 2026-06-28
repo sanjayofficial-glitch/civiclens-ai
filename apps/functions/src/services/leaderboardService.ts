@@ -1,7 +1,6 @@
-import { FieldValue } from '../lib/firebase';
 import { DEFAULT_REPUTATION } from '../config';
+import { FieldValue, db } from '../lib/firebase';
 import { LeaderboardRepository } from '../repositories/leaderboardRepository';
-import { db } from '../lib/firebase';
 
 const leaderboard = new LeaderboardRepository();
 
@@ -18,7 +17,9 @@ function periodWindow(period: 'weekly' | 'monthly' | 'all_time') {
   return now;
 }
 
-export async function rebuildLeaderboard(period: 'weekly' | 'monthly' | 'all_time') {
+export async function rebuildLeaderboard(
+  period: 'weekly' | 'monthly' | 'all_time',
+) {
   const start = periodWindow(period);
   const usersSnapshot = await db.collection('users').get();
   const issuesSnapshot = await db.collection('issues').get();
@@ -26,25 +27,39 @@ export async function rebuildLeaderboard(period: 'weekly' | 'monthly' | 'all_tim
   const issueCounts = new Map<string, { reported: number; verified: number }>();
 
   issuesSnapshot.forEach((doc) => {
-    const data = doc.data();
-    const createdAt = data.createdAt?.toDate?.() ?? new Date(0);
+    const data = doc.data() as Record<string, unknown>;
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+    const createdAt =
+      (data.createdAt as Record<string, unknown> | undefined)?.toDate?.() ??
+      new Date(0);
     if (createdAt < start && period !== 'all_time') {
       return;
     }
 
-    const stats = issueCounts.get(String(data.reporterId)) ?? { reported: 0, verified: 0 };
+    const reporterId = String(data.reporterId);
+    const stats = issueCounts.get(reporterId) ?? {
+      reported: 0,
+      verified: 0,
+    };
     stats.reported += 1;
-    if ((data.status === 'verified' || data.status === 'resolved') && Array.isArray(data.verification?.verifiedBy) && data.verification.verifiedBy.length > 0) {
+    if (
+      (data.status === 'verified' || data.status === 'resolved') &&
+      Array.isArray(
+        (data.verification as Record<string, unknown> | undefined)?.verifiedBy,
+      ) &&
+      ((data.verification as Record<string, unknown>).verifiedBy as unknown[])
+        .length > 0
+    ) {
       stats.verified += 1;
     }
-    issueCounts.set(String(data.reporterId), stats);
+    issueCounts.set(reporterId, stats);
   });
 
   const batch = db.batch();
   const now = FieldValue.serverTimestamp();
 
   usersSnapshot.forEach((doc) => {
-    const data = doc.data();
+    const data = doc.data() as Record<string, unknown>;
     const stats = issueCounts.get(doc.id) ?? { reported: 0, verified: 0 };
     const score =
       stats.reported * DEFAULT_REPUTATION.ISSUE_REPORTED +
@@ -53,7 +68,7 @@ export async function rebuildLeaderboard(period: 'weekly' | 'monthly' | 'all_tim
 
     const record = {
       userId: doc.id,
-      displayName: String(data.displayName ?? 'Anonymous'),
+      displayName: (data.displayName as string | undefined) ?? 'Anonymous',
       photoURL: data.photoURL ?? null,
       score,
       issuesReported: stats.reported,
@@ -67,4 +82,3 @@ export async function rebuildLeaderboard(period: 'weekly' | 'monthly' | 'all_tim
 
   await batch.commit();
 }
-

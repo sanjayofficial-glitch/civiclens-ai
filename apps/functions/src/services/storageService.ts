@@ -1,7 +1,12 @@
-import { bucket } from '../lib/firebase';
 import { fail } from '../lib/errors';
+import { bucket } from '../lib/firebase';
 
-const IMAGE_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp', 'image/gif']);
+const IMAGE_TYPES = new Set([
+  'image/jpeg',
+  'image/png',
+  'image/webp',
+  'image/gif',
+]);
 const VIDEO_TYPES = new Set(['video/mp4', 'video/webm', 'video/quicktime']);
 
 export function validateUpload(contentType: string, sizeBytes: number) {
@@ -18,9 +23,13 @@ export function validateUpload(contentType: string, sizeBytes: number) {
   }
 }
 
-export function buildUploadPath(userId: string, kind: 'avatar' | 'issue', fileName: string) {
+export function buildUploadPath(
+  userId: string,
+  kind: 'avatar' | 'issue',
+  fileName: string,
+) {
   const safeName = fileName.replace(/[^a-zA-Z0-9._-]/g, '_');
-  return `users/${userId}/${kind}/${Date.now()}_${safeName}`;
+  return `users/${userId}/${kind}/${String(Date.now())}_${safeName}`;
 }
 
 export async function fetchFileBuffer(url: string) {
@@ -41,4 +50,3 @@ export async function getSignedDownloadUrl(path: string) {
 
   return url;
 }
-

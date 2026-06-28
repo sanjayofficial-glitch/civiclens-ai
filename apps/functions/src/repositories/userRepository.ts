@@ -1,4 +1,5 @@
 import { FieldValue } from '../lib/firebase';
+
 import { BaseRepository } from './baseRepository';
 
 export interface BackendUserRecord {
@@ -33,4 +34,3 @@ export class UserRepository extends BaseRepository<BackendUserRecord> {
     );
   }
 }
-

@@ -7,6 +7,8 @@
  * Validates: Requirements 1.1, 1.2, 1.3, 2.1, 3.1, 5.2
  */
 
+import type * as ErrorsModule from '../lib/errors';
+
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 
 // ---------------------------------------------------------------------------
@@ -18,19 +20,25 @@ vi.mock('../config', () => ({
   GEMINI_MODEL: 'gemini-1.5-flash',
   GEMINI_TIMEOUT_MS: 5000,
   DEFAULT_REPUTATION: {
-    ISSUE_REPORTED: 5, ISSUE_VERIFIED: 8, COMMENT_CREATED: 1,
-    UPVOTE_CAST: 2, DOWNVOTE_CAST: -1, ISSUE_RESOLVED: 15,
+    ISSUE_REPORTED: 5,
+    ISSUE_VERIFIED: 8,
+    COMMENT_CREATED: 1,
+    UPVOTE_CAST: 2,
+    DOWNVOTE_CAST: -1,
+    ISSUE_RESOLVED: 15,
   },
 }));
 
 // Real fail() so HttpsError propagates exactly as production does
 vi.mock('../lib/errors', async () => {
-  const actual = await vi.importActual<typeof import('../lib/errors')>('../lib/errors');
+  const actual = await vi.importActual<typeof ErrorsModule>('../lib/errors');
   return actual;
 });
 
 // Mock fetchFileBuffer — simulates unauthenticated fetch returning 403
-const { mockFetchFileBuffer } = vi.hoisted(() => ({ mockFetchFileBuffer: vi.fn() }));
+const { mockFetchFileBuffer } = vi.hoisted(() => ({
+  mockFetchFileBuffer: vi.fn(),
+}));
 vi.mock('../services/storageService', () => ({
   fetchFileBuffer: mockFetchFileBuffer,
   buildUploadPath: vi.fn(),
@@ -59,8 +67,8 @@ vi.mock('../lib/firebase', () => {
   return { db, FieldValue, bucket: {}, auth: {}, storage: {} };
 });
 
-import { analyzeIssueMedia } from '../services/geminiService';
 import { recordAnalyticsEvent } from '../services/analyticsService';
+import { analyzeIssueMedia } from '../services/geminiService';
 
 // ---------------------------------------------------------------------------
 
@@ -108,18 +116,18 @@ describe('Test 1A — AI key guard (Bug Condition)', () => {
     // Ensure key is absent
     delete process.env.GEMINI_API_KEY;
 
-    const result = await analyzeIssueMedia({
+    const result = (await analyzeIssueMedia({
       title: 'Pothole on Main Street',
       description: 'Deep pothole causing tyre damage',
       imageUrls: [],
-    }) as unknown as Record<string, unknown>;
+    })) as unknown as Record<string, unknown>;
 
     // EXPECTED AFTER FIX: usedFallback is true on the returned analysis
     // CURRENT (UNFIXED): fallbackAnalysis() does not set usedFallback:true — key is missing
     expect(
       result.usedFallback,
       'When GEMINI_API_KEY is absent, analysis should have usedFallback:true to signal caller. ' +
-      `Got: ${JSON.stringify(result)}`
+        `Got: ${JSON.stringify(result)}`,
     ).toBe(true); // FAILS on unfixed code (fallbackAnalysis returns no usedFallback field)
   });
 });
@@ -145,30 +153,37 @@ describe('Test 1B — Image download (Bug Condition)', () => {
     // Gemini is called with imageParts — if imageParts is empty the fetch mock never matters
     global.fetch = vi.fn().mockResolvedValue({
       ok: true,
-      json: () => Promise.resolve({
-        candidates: [{
-          content: {
-            parts: [{
-              text: JSON.stringify({
-                category: 'pothole',
-                severity: 'high',
-                confidence: 0.90,
-                title: 'Pothole',
-                description: 'Deep pothole',
-                suggestedTags: ['pothole'],
-                duplicateScore: 0.1,
-                safetyConcern: false,
-              }),
-            }],
-          },
-        }],
-      }),
+      json: () =>
+        Promise.resolve({
+          candidates: [
+            {
+              content: {
+                parts: [
+                  {
+                    text: JSON.stringify({
+                      category: 'pothole',
+                      severity: 'high',
+                      confidence: 0.9,
+                      title: 'Pothole',
+                      description: 'Deep pothole',
+                      suggestedTags: ['pothole'],
+                      duplicateScore: 0.1,
+                      safetyConcern: false,
+                    }),
+                  },
+                ],
+              },
+            },
+          ],
+        }),
     });
 
     const result = await analyzeIssueMedia({
       title: 'Pothole',
       description: 'Deep pothole near school',
-      imageUrls: ['https://firebasestorage.googleapis.com/v0/b/test/o/issues%2Fphoto.jpg?alt=media&token=abc'],
+      imageUrls: [
+        'https://firebasestorage.googleapis.com/v0/b/test/o/issues%2Fphoto.jpg?alt=media&token=abc',
+      ],
     });
 
     // EXPECTED AFTER FIX: confidence >= 0.6 (Gemini received the image inline data)
@@ -207,42 +222,58 @@ describe('Test 1C — Field names (Bug Condition)', () => {
     // Gemini returns title/description (current unfixed field names in the prompt)
     global.fetch = vi.fn().mockResolvedValue({
       ok: true,
-      json: () => Promise.resolve({
-        candidates: [{
-          content: {
-            parts: [{
-              text: JSON.stringify({
-                category: 'pothole',
-                severity: 'medium',
-                confidence: 0.85,
-                title: 'Pothole on Baker Street',
-                description: 'Large pothole blocking traffic',
-                suggestedTags: ['pothole', 'road'],
-                duplicateScore: 0.05,
-                safetyConcern: false,
-              }),
-            }],
-          },
-        }],
-      }),
+      json: () =>
+        Promise.resolve({
+          candidates: [
+            {
+              content: {
+                parts: [
+                  {
+                    text: JSON.stringify({
+                      category: 'pothole',
+                      severity: 'medium',
+                      confidence: 0.85,
+                      title: 'Pothole on Baker Street',
+                      description: 'Large pothole blocking traffic',
+                      suggestedTags: ['pothole', 'road'],
+                      duplicateScore: 0.05,
+                      safetyConcern: false,
+                    }),
+                  },
+                ],
+              },
+            },
+          ],
+        }),
     });
 
-    const result = await analyzeIssueMedia({
+    const result = (await analyzeIssueMedia({
       title: 'Pothole',
       description: 'Pothole on Baker Street',
       imageUrls: [],
-    }) as unknown as Record<string, unknown>;
+    })) as unknown as Record<string, unknown>;
 
     // EXPECTED AFTER FIX: suggestedTitle and suggestedDescription are present
     // CURRENT (UNFIXED): result has 'title' and 'description' keys, NOT 'suggestedTitle'/'suggestedDescription'
-    expect(result, 'result should have suggestedTitle key').toHaveProperty('suggestedTitle');
-    expect(result, 'result should have suggestedDescription key').toHaveProperty('suggestedDescription');
-    expect(result.suggestedTitle, 'suggestedTitle should be a non-empty string').toBeTruthy();
-    expect(result.suggestedDescription, 'suggestedDescription should be a non-empty string').toBeTruthy();
+    expect(result, 'result should have suggestedTitle key').toHaveProperty(
+      'suggestedTitle',
+    );
+    expect(
+      result,
+      'result should have suggestedDescription key',
+    ).toHaveProperty('suggestedDescription');
+    expect(
+      result.suggestedTitle,
+      'suggestedTitle should be a non-empty string',
+    ).toBeTruthy();
+    expect(
+      result.suggestedDescription,
+      'suggestedDescription should be a non-empty string',
+    ).toBeTruthy();
 
     // Inverse: the OLD wrong keys should NOT be present (they would be on unfixed code)
     // This makes the failure message explicit
-    expect(result).not.toHaveProperty('title');     // FAILS on unfixed (has 'title')
+    expect(result).not.toHaveProperty('title'); // FAILS on unfixed (has 'title')
     expect(result).not.toHaveProperty('description'); // FAILS on unfixed (has 'description')
   });
 });
@@ -265,15 +296,16 @@ describe('Test 5 — analytics/global (Bug Condition)', () => {
     // Track which doc IDs were written
     const writtenDocIds: string[] = [];
 
-    mockCollection.mockImplementation((collectionName: string) => {
+    mockCollection.mockImplementation((_collectionName: string) => {
       return {
         doc: vi.fn().mockImplementation((docId: string) => {
           return {
             get: vi.fn().mockResolvedValue({
               exists: writtenDocIds.includes(docId),
-              data: () => writtenDocIds.includes(docId) ? { key: docId } : undefined,
+              data: () =>
+                writtenDocIds.includes(docId) ? { key: docId } : undefined,
             }),
-            set: vi.fn().mockImplementation(async () => {
+            set: vi.fn().mockImplementation(() => {
               writtenDocIds.push(docId);
             }),
           };
@@ -285,7 +317,9 @@ describe('Test 5 — analytics/global (Bug Condition)', () => {
     // (these are what the trigger currently calls — none write to 'global')
     const { dailyDocId } = await import('../services/analyticsService');
     await recordAnalyticsEvent(dailyDocId(), 'daily', { newIssues: 1 });
-    await recordAnalyticsEvent('category_pothole', 'category', { reportCount: 1 });
+    await recordAnalyticsEvent('category_pothole', 'category', {
+      reportCount: 1,
+    });
     await recordAnalyticsEvent('status_reported', 'status', { issueCount: 1 });
 
     // EXPECTED AFTER FIX: 'global' doc was written by onIssueCreated trigger
@@ -295,7 +329,7 @@ describe('Test 5 — analytics/global (Bug Condition)', () => {
     expect(
       globalWasWritten,
       `analytics/global was never written. Written docs: [${writtenDocIds.join(', ')}]. ` +
-      'The onIssueCreated trigger does not call recordAnalyticsEvent("global", ...).'
+        'The onIssueCreated trigger does not call recordAnalyticsEvent("global", ...).',
     ).toBe(true); // FAILS on unfixed code
   });
 });

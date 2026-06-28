@@ -1,4 +1,5 @@
 import { FieldValue } from '../lib/firebase';
+
 import { BaseRepository } from './baseRepository';
 
 export interface BackendNotificationRecord {
@@ -24,4 +25,3 @@ export class NotificationRepository extends BaseRepository<BackendNotificationRe
     });
   }
 }
-

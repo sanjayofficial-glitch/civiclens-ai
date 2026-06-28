@@ -47,6 +47,7 @@ export default tseslint.config(
         {
           groups: [
             'builtin',
+            'type',
             'external',
             'internal',
             'parent',

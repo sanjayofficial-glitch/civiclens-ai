@@ -1,6 +1,6 @@
 import { db } from '../lib/firebase';
 
-export class BaseRepository<T extends FirebaseFirestore.DocumentData> {
+export class BaseRepository<_T extends FirebaseFirestore.DocumentData> {
   constructor(protected readonly collectionName: string) {}
 
   protected collection() {
@@ -15,4 +15,3 @@ export class BaseRepository<T extends FirebaseFirestore.DocumentData> {
     return this.doc(id).get();
   }
 }
-

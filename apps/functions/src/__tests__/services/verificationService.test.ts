@@ -1,12 +1,19 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
-const { mockRunTransaction, mockDoc, mockCollection, mockDb, mockServerTimestamp } = vi.hoisted(() => {
-  const mockRunTransaction = vi.fn();
+const { mockRunTransaction, mockDb, mockServerTimestamp } = vi.hoisted(() => {
   const mockDoc = vi.fn();
   const mockCollection = vi.fn(() => ({ doc: mockDoc }));
-  const mockDb = { collection: mockCollection, runTransaction: mockRunTransaction };
+  const mockRunTransaction = vi.fn();
+  const mockDb = {
+    collection: mockCollection,
+    runTransaction: mockRunTransaction,
+  };
   const mockServerTimestamp = vi.fn(() => ({ _method: 'serverTimestamp' }));
-  return { mockRunTransaction, mockDoc, mockCollection, mockDb, mockServerTimestamp };
+  return {
+    mockRunTransaction,
+    mockDb,
+    mockServerTimestamp,
+  };
 });
 
 vi.mock('../../lib/firebase', () => ({
@@ -21,22 +28,34 @@ beforeEach(() => {
 });
 
 describe('registerVote', () => {
-  const input = { issueId: 'issue_001', userId: 'user_abc', type: 'upvote' as const };
+  const input = {
+    issueId: 'issue_001',
+    userId: 'user_abc',
+    type: 'upvote' as const,
+  };
 
   it('creates a vote and updates verification when issue exists', async () => {
-    const issueSnap = { exists: true, data: () => ({ verification: { upvotes: 2, downvotes: 1, verifiedBy: ['user_x'] } }) };
+    const issueSnap = {
+      exists: true,
+      data: () => ({
+        verification: { upvotes: 2, downvotes: 1, verifiedBy: ['user_x'] },
+      }),
+    };
     const voteSnap = { exists: false };
 
     const tx = {
-      get: vi.fn()
+      get: vi
+        .fn()
         .mockResolvedValueOnce(issueSnap)
         .mockResolvedValueOnce(voteSnap),
       set: vi.fn(),
     };
 
-    mockRunTransaction.mockImplementationOnce(async (cb: (t: typeof tx) => Promise<void>) => {
-      await cb(tx);
-    });
+    mockRunTransaction.mockImplementationOnce(
+      async (cb: (t: typeof tx) => Promise<void>) => {
+        await cb(tx);
+      },
+    );
 
     await registerVote(input);
 
@@ -45,7 +64,11 @@ describe('registerVote', () => {
 
     expect(tx.set).toHaveBeenCalledWith(
       expect.objectContaining({}),
-      expect.objectContaining({ issueId: 'issue_001', userId: 'user_abc', type: 'upvote' }),
+      expect.objectContaining({
+        issueId: 'issue_001',
+        userId: 'user_abc',
+        type: 'upvote',
+      }),
     );
 
     expect(tx.set).toHaveBeenCalledWith(
@@ -68,15 +91,18 @@ describe('registerVote', () => {
     const voteSnap = { exists: false };
 
     const tx = {
-      get: vi.fn()
+      get: vi
+        .fn()
         .mockResolvedValueOnce(issueSnap)
         .mockResolvedValueOnce(voteSnap),
       set: vi.fn(),
     };
 
-    mockRunTransaction.mockImplementationOnce(async (cb: (t: typeof tx) => Promise<void>) => {
-      await cb(tx);
-    });
+    mockRunTransaction.mockImplementationOnce(
+      async (cb: (t: typeof tx) => Promise<void>) => {
+        await cb(tx);
+      },
+    );
 
     await registerVote(input);
 
@@ -87,7 +113,7 @@ describe('registerVote', () => {
           upvotes: 1,
           downvotes: 0,
           verifiedBy: ['user_abc'],
-          verifiedAt: expect.any(Object),
+          verifiedAt: expect.anything() as never,
         },
       }),
       { merge: true },
@@ -98,15 +124,18 @@ describe('registerVote', () => {
     const issueSnap = { exists: false };
     const voteSnap = { exists: false };
     const tx = {
-      get: vi.fn()
+      get: vi
+        .fn()
         .mockResolvedValueOnce(issueSnap)
         .mockResolvedValueOnce(voteSnap),
       set: vi.fn(),
     };
 
-    mockRunTransaction.mockImplementationOnce(async (cb: (t: typeof tx) => Promise<void>) => {
-      await cb(tx);
-    });
+    mockRunTransaction.mockImplementationOnce(
+      async (cb: (t: typeof tx) => Promise<void>) => {
+        await cb(tx);
+      },
+    );
 
     await expect(registerVote(input)).rejects.toThrow('Issue not found.');
   });
@@ -116,15 +145,18 @@ describe('registerVote', () => {
     const voteSnap = { exists: true };
 
     const tx = {
-      get: vi.fn()
+      get: vi
+        .fn()
         .mockResolvedValueOnce(issueSnap)
         .mockResolvedValueOnce(voteSnap),
       set: vi.fn(),
     };
 
-    mockRunTransaction.mockImplementationOnce(async (cb: (t: typeof tx) => Promise<void>) => {
-      await cb(tx);
-    });
+    mockRunTransaction.mockImplementationOnce(
+      async (cb: (t: typeof tx) => Promise<void>) => {
+        await cb(tx);
+      },
+    );
 
     await expect(registerVote(input)).rejects.toThrow('Duplicate vote.');
   });
