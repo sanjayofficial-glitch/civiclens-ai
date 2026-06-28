@@ -62,14 +62,16 @@ export const issueSchema = z.object({
   updatedAt: timestampSchema,
 });
 
-export const createIssueSchema = issueSchema.omit({
-  id: true,
-  verification: true,
-  createdAt: true,
-  updatedAt: true,
-}).extend({
-  verification: issueVerificationSchema.optional(),
-});
+export const createIssueSchema = issueSchema
+  .omit({
+    id: true,
+    verification: true,
+    createdAt: true,
+    updatedAt: true,
+  })
+  .extend({
+    verification: issueVerificationSchema.optional(),
+  });
 
 export const updateIssueSchema = createIssueSchema.partial();
 

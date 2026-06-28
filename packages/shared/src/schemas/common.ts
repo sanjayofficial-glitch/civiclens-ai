@@ -89,6 +89,5 @@ export function timestampToIso(value: TimestampInput): string {
 }
 
 /** Normalizes any accepted timestamp input to an ISO-8601 string. */
-export const normalizedTimestampSchema = timestampSchema.transform(
-  timestampToIso,
-);
+export const normalizedTimestampSchema =
+  timestampSchema.transform(timestampToIso);

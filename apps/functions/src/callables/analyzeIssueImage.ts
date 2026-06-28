@@ -5,6 +5,7 @@ import { assertAuth, fail } from '../lib/errors';
 import { parseInput } from '../lib/validation';
 import { analyzeIssueMedia } from '../services/geminiService';
 import { db, FieldValue } from '../lib/firebase';
+import type { IssueAnalysisResult } from '../types';
 
 /**
  * Callable that accepts either:
@@ -25,6 +26,18 @@ const directSchema = z.object({
   locationText: z.string().optional().default(''),
 });
 
+function toAiSuggestion(analysis: IssueAnalysisResult) {
+  return {
+    category: analysis.category,
+    severity: analysis.severity,
+    confidence: analysis.confidence,
+    suggestedTitle: analysis.title,
+    suggestedDescription: analysis.description,
+    suggestedTags: analysis.suggestedTags,
+    duplicateProbability: analysis.duplicateScore,
+  };
+}
+
 export const analyzeIssueImage = onCall(async (request) => {
   assertAuth(request.auth);
 
@@ -39,7 +52,7 @@ export const analyzeIssueImage = onCall(async (request) => {
       locationText: locationText || undefined,
     });
 
-    return { status: 'success', analysis };
+    return { status: 'success', analysis: toAiSuggestion(analysis) };
   }
 
   // Try issueIdSchema
@@ -63,14 +76,16 @@ export const analyzeIssueImage = onCall(async (request) => {
     locationText: issue.location?.address,
   });
 
+  const aiSuggestion = toAiSuggestion(analysis);
+
   // Persist analysis back to the issue doc
   await snap.ref.set(
     {
-      aiAnalysis: analysis,
+      aiAnalysis: aiSuggestion,
       updatedAt: FieldValue.serverTimestamp(),
     },
     { merge: true },
   );
 
-  return { status: 'success', analysis };
+  return { status: 'success', analysis: aiSuggestion };
 });

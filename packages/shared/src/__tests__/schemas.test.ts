@@ -1,6 +1,15 @@
 import { describe, it, expect } from 'vitest';
 import { z } from 'zod';
 
+import { commentSchema, createCommentSchema } from '../schemas/comment.js';
+import {
+  timestampSchema,
+  geoPointSchema,
+  isFirestoreTimestamp,
+  timestampToDate,
+  dateToTimestamp,
+  timestampToIso,
+} from '../schemas/common.js';
 import {
   userRoleSchema,
   issueStatusSchema,
@@ -10,22 +19,11 @@ import {
   notificationTypeSchema,
   leaderboardPeriodSchema,
 } from '../schemas/enums.js';
-
-import {
-  timestampSchema,
-  geoPointSchema,
-  isFirestoreTimestamp,
-  timestampToDate,
-  dateToTimestamp,
-  timestampToIso,
-} from '../schemas/common.js';
-
-import { userSchema, createUserSchema, updateUserSchema } from '../schemas/user.js';
-import { issueSchema, createIssueSchema } from '../schemas/issue.js';
-import { voteSchema, createVoteSchema } from '../schemas/vote.js';
-import { commentSchema, createCommentSchema } from '../schemas/comment.js';
-import { notificationSchema, createNotificationSchema } from '../schemas/notification.js';
+import { issueSchema } from '../schemas/issue.js';
 import { leaderboardEntrySchema } from '../schemas/leaderboard.js';
+import { notificationSchema } from '../schemas/notification.js';
+import { userSchema, createUserSchema } from '../schemas/user.js';
+import { voteSchema, createVoteSchema } from '../schemas/vote.js';
 
 describe('Enums', () => {
   it('accepts valid user roles', () => {
@@ -167,16 +165,21 @@ describe('Common — timestamp helpers', () => {
 
 describe('Common — geoPoint', () => {
   it('accepts valid coordinates', () => {
-    expect(geoPointSchema.parse({ latitude: 40.7128, longitude: -74.006 }))
-      .toEqual({ latitude: 40.7128, longitude: -74.006 });
+    expect(
+      geoPointSchema.parse({ latitude: 40.7128, longitude: -74.006 }),
+    ).toEqual({ latitude: 40.7128, longitude: -74.006 });
   });
 
   it('rejects out-of-range latitude', () => {
-    expect(() => geoPointSchema.parse({ latitude: 100, longitude: 0 })).toThrow(z.ZodError);
+    expect(() => geoPointSchema.parse({ latitude: 100, longitude: 0 })).toThrow(
+      z.ZodError,
+    );
   });
 
   it('rejects out-of-range longitude', () => {
-    expect(() => geoPointSchema.parse({ latitude: 0, longitude: 200 })).toThrow(z.ZodError);
+    expect(() => geoPointSchema.parse({ latitude: 0, longitude: 200 })).toThrow(
+      z.ZodError,
+    );
   });
 });
 
@@ -226,19 +229,28 @@ describe('User schema', () => {
   });
 
   it('rejects missing uid', () => {
-    expect(() => userSchema.parse({ ...validUser, uid: undefined })).toThrow(z.ZodError);
+    expect(() => userSchema.parse({ ...validUser, uid: undefined })).toThrow(
+      z.ZodError,
+    );
   });
 
   it('rejects invalid email', () => {
-    expect(() => userSchema.parse({ ...validUser, email: 'not-an-email' })).toThrow(z.ZodError);
+    expect(() =>
+      userSchema.parse({ ...validUser, email: 'not-an-email' }),
+    ).toThrow(z.ZodError);
   });
 
   it('rejects invalid role', () => {
-    expect(() => userSchema.parse({ ...validUser, role: 'admin' })).toThrow(z.ZodError);
+    expect(() => userSchema.parse({ ...validUser, role: 'admin' })).toThrow(
+      z.ZodError,
+    );
   });
 
   it('accepts optional fcmTokens when provided', () => {
-    const result = userSchema.parse({ ...validUser, fcmTokens: ['tok1', 'tok2'] });
+    const result = userSchema.parse({
+      ...validUser,
+      fcmTokens: ['tok1', 'tok2'],
+    });
     expect(result.fcmTokens).toEqual(['tok1', 'tok2']);
   });
 });
@@ -298,11 +310,18 @@ describe('Issue schema', () => {
   });
 
   it('rejects invalid severity', () => {
-    expect(() => issueSchema.parse({ ...base, severity: 'extreme' })).toThrow(z.ZodError);
+    expect(() => issueSchema.parse({ ...base, severity: 'extreme' })).toThrow(
+      z.ZodError,
+    );
   });
 
   it('rejects negative verification counts', () => {
-    expect(() => issueSchema.parse({ ...base, verification: { upvotes: -1, downvotes: 0, verifiedBy: [] } })).toThrow(z.ZodError);
+    expect(() =>
+      issueSchema.parse({
+        ...base,
+        verification: { upvotes: -1, downvotes: 0, verifiedBy: [] },
+      }),
+    ).toThrow(z.ZodError);
   });
 });
 
@@ -319,7 +338,12 @@ describe('Vote schema', () => {
 
   it('rejects invalid vote type', () => {
     expect(() =>
-      voteSchema.parse({ issueId: 'i1', userId: 'u1', type: 'invalid', createdAt: '2026-06-27T12:00:00.000Z' })
+      voteSchema.parse({
+        issueId: 'i1',
+        userId: 'u1',
+        type: 'invalid',
+        createdAt: '2026-06-27T12:00:00.000Z',
+      }),
     ).toThrow(z.ZodError);
   });
 });
@@ -337,13 +361,23 @@ describe('Comment schema', () => {
 
   it('rejects empty text', () => {
     expect(() =>
-      commentSchema.parse({ issueId: 'i1', userId: 'u1', text: '', createdAt: '2026-06-27T12:00:00.000Z' })
+      commentSchema.parse({
+        issueId: 'i1',
+        userId: 'u1',
+        text: '',
+        createdAt: '2026-06-27T12:00:00.000Z',
+      }),
     ).toThrow(z.ZodError);
   });
 
   it('rejects text exceeding 2000 chars', () => {
     expect(() =>
-      commentSchema.parse({ issueId: 'i1', userId: 'u1', text: 'a'.repeat(2001), createdAt: '2026-06-27T12:00:00.000Z' })
+      commentSchema.parse({
+        issueId: 'i1',
+        userId: 'u1',
+        text: 'a'.repeat(2001),
+        createdAt: '2026-06-27T12:00:00.000Z',
+      }),
     ).toThrow(z.ZodError);
   });
 });
@@ -379,14 +413,26 @@ describe('Leaderboard entry schema', () => {
 
   it('rejects negative score', () => {
     expect(() =>
-      leaderboardEntrySchema.parse({ userId: 'u1', displayName: 'T', photoURL: null, score: -1, issuesReported: 0, issuesVerified: 0, period: 'weekly' })
+      leaderboardEntrySchema.parse({
+        userId: 'u1',
+        displayName: 'T',
+        photoURL: null,
+        score: -1,
+        issuesReported: 0,
+        issuesVerified: 0,
+        period: 'weekly',
+      }),
     ).toThrow(z.ZodError);
   });
 });
 
 describe('Create schemas (omit timestamps)', () => {
   it('createVoteSchema omits createdAt', () => {
-    const result = createVoteSchema.parse({ issueId: 'i1', userId: 'u1', type: 'downvote' });
+    const result = createVoteSchema.parse({
+      issueId: 'i1',
+      userId: 'u1',
+      type: 'downvote',
+    });
     expect(result.type).toBe('downvote');
     expect('createdAt' in result).toBe(false);
   });
@@ -411,7 +457,11 @@ describe('Create schemas (omit timestamps)', () => {
   });
 
   it('createCommentSchema omits createdAt', () => {
-    const result = createCommentSchema.parse({ issueId: 'i1', userId: 'u1', text: 'hello' });
+    const result = createCommentSchema.parse({
+      issueId: 'i1',
+      userId: 'u1',
+      text: 'hello',
+    });
     expect(result.text).toBe('hello');
   });
 });

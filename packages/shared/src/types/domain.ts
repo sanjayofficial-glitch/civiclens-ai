@@ -1,4 +1,8 @@
-import type { GeoPoint, FirestoreTimestamp, TimestampInput } from '../schemas/common.js';
+import type {
+  GeoPoint,
+  FirestoreTimestamp,
+  TimestampInput,
+} from '../schemas/common.js';
 import type {
   IssueCategory,
   IssueSeverity,
@@ -131,15 +135,9 @@ export type {
   LeaderboardPeriod,
 } from '../schemas/enums.js';
 
-export type {
-  CreateUser,
-  UpdateUser,
-} from '../schemas/user.js';
+export type { CreateUser, UpdateUser } from '../schemas/user.js';
 
-export type {
-  CreateIssue,
-  UpdateIssue,
-} from '../schemas/issue.js';
+export type { CreateIssue, UpdateIssue } from '../schemas/issue.js';
 
 export type { CreateVote } from '../schemas/vote.js';
 export type { CreateComment } from '../schemas/comment.js';
