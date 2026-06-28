@@ -1,4 +1,5 @@
 import { FieldValue, db } from '../lib/firebase';
+import { checkVerificationBadges } from './badgeService';
 
 export async function registerVote(input: {
   issueId: string;
@@ -58,4 +59,6 @@ export async function registerVote(input: {
       { merge: true },
     );
   });
+
+  await checkVerificationBadges(input.userId);
 }

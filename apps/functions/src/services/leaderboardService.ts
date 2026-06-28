@@ -25,9 +25,20 @@ export async function updateLeaderboardStats(
   const periods = ['weekly', 'monthly', 'all_time'] as const;
   const now = FieldValue.serverTimestamp();
 
+  const userSnap = await db.collection('users').doc(uid).get();
+  const userData = userSnap.data() as { displayName?: string; photoURL?: string | null } | undefined;
+  const displayName = userData?.displayName ?? 'Anonymous Citizen';
+  const photoURL = userData?.photoURL ?? null;
+
   for (const period of periods) {
     const docRef = leaderboard.doc(`${period}_${uid}`);
-    const updates: Record<string, unknown> = { updatedAt: now };
+    const updates: Record<string, unknown> = {
+      updatedAt: now,
+      period,
+      userId: uid,
+      displayName,
+      photoURL,
+    };
     if (deltas.score !== undefined) {
       updates.score = FieldValue.increment(deltas.score);
     }
