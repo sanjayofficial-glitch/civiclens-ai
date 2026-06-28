@@ -130,7 +130,7 @@ export default function IssueDetailsPage() {
   const CategoryIcon = category.icon;
   const images = issue.media?.images ?? [];
   const isOwner = user?.uid === issue.reporterId;
-  const canDelete = isOwner && (issue.status === 'resolved' || issue.status === 'rejected');
+  const canDelete = isOwner;
 
   // Build a timeline showing which statuses have been passed through
   const currentStatusIdx = STATUS_ORDER.indexOf(issue.status as (typeof STATUS_ORDER)[number]);

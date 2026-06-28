@@ -53,7 +53,7 @@
       "queryScope": "COLLECTION",
       "fields": [
         { "fieldPath": "issueId", "order": "ASCENDING" },
-        { "fieldPath": "createdAt", "order": "DESCENDING" }
+        { "fieldPath": "createdAt", "order": "ASCENDING" }
       ]
     },
     {

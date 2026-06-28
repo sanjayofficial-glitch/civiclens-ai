@@ -78,6 +78,11 @@ const {
           set: mockDocSet,
           update: mockDocUpdate,
         };
+      }),
+      where: vi.fn(function() {
+        return {
+          get: vi.fn().mockResolvedValue({ docs: [], size: 0, forEach: vi.fn() })
+        };
       })
     };
   }),
@@ -509,6 +514,12 @@ describe('Preservation 4 — onIssueCreated trigger side-effects are independent
           },
         }),
         set: mockDocSet,
+        update: mockDocUpdate,
+      }),
+      where: vi.fn(function() {
+        return {
+          get: vi.fn().mockResolvedValue({ docs: [], size: 0, forEach: vi.fn() })
+        };
       }),
     });
   }
