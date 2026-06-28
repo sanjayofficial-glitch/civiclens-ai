@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../useAuth';
 import type { User as DomainUser } from '@blockseblock/shared';
 import { onSnapshot, doc } from 'firebase/firestore';
@@ -7,14 +7,15 @@ import { userConverter } from '../../services/converters';
 import { toast } from 'sonner';
 import confetti from 'canvas-confetti';
 import { BADGES } from '../../lib/constants';
+import { BadgeService } from '../../services/badge.service';
 
 export const useUser = () => {
   const { user: authUser, loading: authLoading } = useAuth();
   const [userProfile, setUserProfile] = useState<DomainUser | null>(null);
   const [loading, setLoading] = useState(true);
   
-  // Track badges to detect when a new one is awarded
-  const [prevBadges, setPrevBadges] = useState<Set<string> | null>(null);
+  // Track badges in a ref so the onSnapshot closure always reads the latest value
+  const prevBadges = useRef<Set<string> | null>(null);
 
   useEffect(() => {
     if (authLoading) return;
@@ -34,8 +35,8 @@ export const useUser = () => {
           
           // Check for new badges
           const currentBadgesSet = new Set(data.badges || []);
-          if (prevBadges !== null) {
-            const newBadges = (data.badges || []).filter(b => !prevBadges.has(b));
+          if (prevBadges.current !== null) {
+            const newBadges = (data.badges || []).filter((b: string) => !prevBadges.current!.has(b));
             if (newBadges.length > 0) {
               // Trigger confetti
               confetti({
@@ -57,8 +58,13 @@ export const useUser = () => {
                 }
               });
             }
+            // In case the backend triggers are delayed or missing, also evaluate client-side
+            BadgeService.evaluateAndAwardBadges(authUser.uid, data as DomainUser);
+          } else {
+            // First time load: still evaluate badges to retroactively fix any stuck state
+            BadgeService.evaluateAndAwardBadges(authUser.uid, data as DomainUser);
           }
-          setPrevBadges(currentBadgesSet);
+          prevBadges.current = currentBadgesSet;
         }
         setLoading(false);
       },

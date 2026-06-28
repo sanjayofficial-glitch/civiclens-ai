@@ -27,6 +27,7 @@ const directSchema = z.object({
   locationText: z.string().optional().default(''),
 });
 
+function toAiSuggestion(analysis: IssueAnalysisResult) {
   return {
     category: analysis.category,
     severity: analysis.severity,

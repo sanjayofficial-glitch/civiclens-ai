@@ -168,6 +168,9 @@ beforeEach(() => {
       get: mockDocGet,
       set: mockDocSet,
     }),
+    where: vi.fn().mockReturnValue({
+      get: vi.fn().mockResolvedValue({ forEach: vi.fn() })
+    })
   });
   mockDocGet.mockResolvedValue({ exists: true, data: () => undefined });
   mockDocSet.mockResolvedValue(undefined);
