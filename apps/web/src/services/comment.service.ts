@@ -18,22 +18,24 @@ export const CommentService = {
   listenToIssueComments: (issueId: string, callback: (comments: (Comment & { id: string })[]) => void) => {
     const q = query(
       collection(db, COMMENTS_COLLECTION).withConverter(commentConverter),
-      where('issueId', '==', issueId),
-      orderBy('createdAt', 'asc')
+      where('issueId', '==', issueId)
     );
     
     return onSnapshot(q, (snap) => {
-      callback(snap.docs.map(doc => doc.data()));
+      const comments = snap.docs.map(doc => doc.data());
+      comments.sort((a, b) => new Date(a.createdAt as string).getTime() - new Date(b.createdAt as string).getTime());
+      callback(comments);
     });
   },
 
   getIssueComments: async (issueId: string) => {
     const q = query(
       collection(db, COMMENTS_COLLECTION).withConverter(commentConverter),
-      where('issueId', '==', issueId),
-      orderBy('createdAt', 'asc')
+      where('issueId', '==', issueId)
     );
     const snap = await getDocs(q);
-    return snap.docs.map(doc => doc.data());
+    const comments = snap.docs.map(doc => doc.data());
+    comments.sort((a, b) => new Date(a.createdAt as string).getTime() - new Date(b.createdAt as string).getTime());
+    return comments;
   }
 };

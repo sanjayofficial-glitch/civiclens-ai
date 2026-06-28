@@ -240,12 +240,24 @@ export default function IssueDetailsPage() {
         </Button>
 
         <div className="flex items-center gap-1">
+          {canDelete && (
+            <Button
+              variant="ghost"
+              size="icon-sm"
+              aria-label="Delete report"
+              onClick={() => setShowDeleteDialog(true)}
+              className="text-destructive hover:bg-destructive/10 hover:text-destructive"
+            >
+              <Trash2 className="size-5" />
+            </Button>
+          )}
+
           {/* Share */}
           <Button variant="ghost" size="icon-sm" aria-label="Share issue" onClick={handleShare}>
             <Share2 className="size-5" />
           </Button>
 
-          {/* More menu (Flag + Delete if eligible) */}
+          {/* More menu (Flag) */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" size="icon-sm" aria-label="More options">
@@ -257,18 +269,6 @@ export default function IssueDetailsPage() {
                 <Flag className="size-4 text-warning" />
                 Flag issue
               </DropdownMenuItem>
-              {canDelete && (
-                <>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem
-                    onClick={() => setShowDeleteDialog(true)}
-                    className="gap-2 text-destructive focus:text-destructive"
-                  >
-                    <Trash2 className="size-4" />
-                    Delete report
-                  </DropdownMenuItem>
-                </>
-              )}
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
