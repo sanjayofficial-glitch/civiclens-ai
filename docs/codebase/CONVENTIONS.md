@@ -20,7 +20,7 @@
 
 ### Path Aliases
 - `@/` maps to `apps/web/src/` (configured in `vite.config.ts`)
-- Package imports use `@blockseblock/shared`
+- Package imports use `@CivicLens/shared`
 
 ### Import Order
 ```typescript
@@ -29,7 +29,7 @@ import { z } from 'zod';
 import { collection } from 'firebase/firestore';
 
 // 2. Shared package
-import { Issue } from '@blockseblock/shared/types';
+import { Issue } from '@CivicLens/shared/types';
 
 // 3. Internal modules (relative)
 import { db } from '../lib/firebase/firestore';

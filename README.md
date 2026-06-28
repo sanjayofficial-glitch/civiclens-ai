@@ -1,4 +1,4 @@
-# BlockSeBlock
+# CivicLens
 
 **AI-powered civic issue reporting platform.**
 
@@ -33,7 +33,7 @@ Built for **Civic Tech Hackathon**.
 
 ```bash
 git clone <repo-url>
-cd blockseblock
+cd CivicLens
 npm install
 ```
 
@@ -64,7 +64,7 @@ npm run build
 ## Run Tests
 
 ```bash
-npm run test --workspace=@blockseblock/functions
+npm run test --workspace=@CivicLens/functions
 ```
 
 21 tests across 4 test files (vitest).
@@ -84,7 +84,7 @@ Firebase (Firestore + Auth + Storage + Cloud Functions + Hosting)
      │
      └── Web App (React SPA)
               │
-              └── Shared (@blockseblock/shared — Zod schemas + Types)
+              └── Shared (@CivicLens/shared — Zod schemas + Types)
 ```
 
 ### Key Features
@@ -103,7 +103,7 @@ Firebase (Firestore + Auth + Storage + Cloud Functions + Hosting)
 ## Project Structure
 
 ```
-blockseblock/
+CivicLens/
 ├── apps/
 │   ├── web/             # React SPA (19 routes)
 │   └── functions/       # Cloud Functions (5 triggers + 5 callables)

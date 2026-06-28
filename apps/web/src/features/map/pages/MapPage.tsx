@@ -17,7 +17,7 @@ import { Badge } from '@/components/ui/badge';
 import { IssueCard } from '@/components/shared/IssueCard';
 import { ISSUE_FILTERS } from '@/lib/constants';
 import { getStatusMeta } from '@/lib/issue-meta';
-import type { IssueStatus } from '@blockseblock/shared';
+import type { IssueStatus } from '@civiclens/shared';
 import { useIssues } from '@/hooks/data/useIssues';
 import 'leaflet/dist/leaflet.css';
 

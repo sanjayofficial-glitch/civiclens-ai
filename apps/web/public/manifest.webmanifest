@@ -1,6 +1,6 @@
 {
-  "name": "BlockSeBlock",
-  "short_name": "BlockSeBlock",
+  "name": "CivicLens",
+  "short_name": "CivicLens",
   "description": "Report civic issues. Build better communities.",
   "dir": "auto",
   "lang": "en-US",

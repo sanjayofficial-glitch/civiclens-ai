@@ -18,7 +18,7 @@ import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Card, CardContent } from '@/components/ui/card';
 import { CATEGORY_OPTIONS, SEVERITY_OPTIONS } from '@/lib/constants';
-import type { IssueCategory, IssueSeverity, IssueAiAnalysis } from '@blockseblock/shared';
+import type { IssueCategory, IssueSeverity, IssueAiAnalysis } from '@civiclens/shared';
 import { IssueService } from '@/services/issue.service';
 import { useAuth } from '@/hooks/useAuth';
 import { GeoPoint } from 'firebase/firestore';
@@ -47,7 +47,7 @@ const STEPS = [
   { id: 'confirm',     label: 'Confirm',     icon: CheckCircle2 },
 ] as const;
 
-const DRAFT_KEY = 'blockseblock-report-draft';
+const DRAFT_KEY = 'civiclens-report-draft';
 
 interface ReportDraft {
   step: number;

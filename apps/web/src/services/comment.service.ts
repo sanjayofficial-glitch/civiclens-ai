@@ -1,6 +1,6 @@
 import { collection, addDoc, query, where, orderBy, onSnapshot, getDocs } from 'firebase/firestore';
 import { db } from '../lib/firebase/firestore.service';
-import type { Comment } from '@blockseblock/shared';
+import type { Comment } from '@civiclens/shared';
 import { commentConverter } from './converters';
 
 const COMMENTS_COLLECTION = 'comments';

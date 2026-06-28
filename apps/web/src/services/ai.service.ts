@@ -1,7 +1,7 @@
 import { GoogleGenAI, Type, Schema } from '@google/genai';
 import { getFunctions, httpsCallable } from 'firebase/functions';
 import { app } from '@/lib/firebase/firebase';
-import type { IssueAiAnalysis } from '@blockseblock/shared';
+import type { IssueAiAnalysis } from '@civiclens/shared';
 
 // ── Schema for structured Gemini output (client-side fallback) ──────────
 

@@ -1,4 +1,4 @@
-import type { Comment } from '@blockseblock/shared';
+import type { Comment } from '@civiclens/shared';
 
 import { useState, useEffect, useCallback } from 'react';
 

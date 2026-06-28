@@ -1,4 +1,4 @@
-import type { LeaderboardPeriod } from '@blockseblock/shared';
+import type { LeaderboardPeriod } from '@civiclens/shared';
 
 import { useState, useEffect, useCallback } from 'react';
 

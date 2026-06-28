@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { IssueService } from '../../services/issue.service';
-import type { Issue } from '@blockseblock/shared';
+import type { Issue } from '@civiclens/shared';
 
 export const useIssue = (id?: string) => {
   const [issue, setIssue] = useState<Issue | null>(null);

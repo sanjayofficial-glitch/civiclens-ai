@@ -22,7 +22,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { StatCard } from '@/components/shared/StatCard';
 import { IssueCard } from '@/components/shared/IssueCard';
 import { getStatusMeta } from '@/lib/issue-meta';
-import type { IssueStatus } from '@blockseblock/shared';
+import type { IssueStatus } from '@civiclens/shared';
 import { useIssues } from '@/hooks/data/useIssues';
 import { useCommunityStats } from '@/hooks/data/useAnalytics';
 import 'leaflet/dist/leaflet.css';

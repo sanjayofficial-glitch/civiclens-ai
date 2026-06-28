@@ -1,6 +1,6 @@
 import { doc, getDoc, setDoc, updateDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '../lib/firebase/firestore.service';
-import type { User } from '@blockseblock/shared';
+import type { User } from '@civiclens/shared';
 import { userConverter } from './converters';
 
 const USERS_COLLECTION = 'users';

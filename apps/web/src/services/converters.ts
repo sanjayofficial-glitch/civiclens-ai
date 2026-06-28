@@ -1,5 +1,5 @@
 import type { DocumentData, FirestoreDataConverter, QueryDocumentSnapshot, SnapshotOptions } from 'firebase/firestore';
-import type { Issue, User, Comment, Vote, Notification, LeaderboardEntry } from '@blockseblock/shared';
+import type { Issue, User, Comment, Vote, Notification, LeaderboardEntry } from '@civiclens/shared';
 
 // Generic converter creator
 function createConverter<T extends { id?: string; uid?: string }>(): FirestoreDataConverter<T> {

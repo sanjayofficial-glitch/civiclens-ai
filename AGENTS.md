@@ -1,4 +1,4 @@
-# BlockSeBlock — Complete Codebase Memory
+# CivicLens — Complete Codebase Memory
 
 > **🕐 Last Updated:** 2026-06-28
 > **🧹 Lint Status:** ✅ 0 warnings, 0 errors
@@ -7,7 +7,7 @@
 
 ## Project Overview
 
-BlockSeBlock is a fully-implemented **AI-powered civic issue reporting platform**. Citizens report urban problems (potholes, streetlights, water leaks, garbage, graffiti, etc.), Google Gemini AI analyzes the reports, and government officials track resolution via a dashboard.
+CivicLens is a fully-implemented **AI-powered civic issue reporting platform**. Citizens report urban problems (potholes, streetlights, water leaks, garbage, graffiti, etc.), Google Gemini AI analyzes the reports, and government officials track resolution via a dashboard.
 
 **Monorepo** managed with Turborepo + npm workspaces. Node >=20, npm 10.9.0.
 
@@ -20,7 +20,7 @@ Firebase (Firestore + Auth + Storage + Cloud Functions + Hosting)
      │
      └── Web App (React 19 + Vite 8 SPA)
               │
-              └── Shared Package (@blockseblock/shared — Zod schemas + Types)
+              └── Shared Package (@CivicLens/shared — Zod schemas + Types)
 ```
 
 **Pattern:** Feature-based modular architecture with a shared domain layer. Schema-first — Zod schemas in `packages/shared` are the single source of truth for all types.
@@ -33,7 +33,7 @@ Firebase (Firestore + Auth + Storage + Cloud Functions + Hosting)
 
 ## Lint Configuration
 
-- **ESLint** with `@blockseblock/eslint-config` (internal package, inherits from root `eslint.config.js`)
+- **ESLint** with `@CivicLens/eslint-config` (internal package, inherits from root `eslint.config.js`)
 - **Flat config** format (`eslint.config.js`) — NOT `.eslintrc`
 - **Oxlint** configured in `oxlint.json` at root level for the web app (faster Rust-based linter)
 - **Priority:** `eslint` runs first via `lint` script; `oxlint` in package.json scripts
@@ -134,7 +134,7 @@ Firebase (Firestore + Auth + Storage + Cloud Functions + Hosting)
 | `useNotifications.ts` | Moved `import type { Notification }` above `react`, fixed prettier void-block formatting, fixed void-return callback |
 
 **Key patterns:**
-- `import type` from `@blockseblock/shared` goes in the `type` group — must be before the `external` group (`react`, etc.) with a blank line between
+- `import type` from `@CivicLens/shared` goes in the `type` group — must be before the `external` group (`react`, etc.) with a blank line between
 - `.filter(n => ...)` → `.filter((n) => ...)` — Prettier requires parens around single arrow params inside expressions
 - `() => { expr; }` → multi-line `() => {\n  expr;\n}` — Prettier rejects single-line arrow bodies with braces
 - `useCallback(() => expr, [])` → `useCallback(() => { expr; }, [])` — void-expression rule disallows returning void from arrow shorthand
@@ -143,7 +143,7 @@ Firebase (Firestore + Auth + Storage + Cloud Functions + Hosting)
 
 **Current status:** 0 warnings/errors in hook files. ~1614 pre-existing errors remain across the rest of `apps/web/` (unrelated to these changes).
 
-**Eslint config context:** Root `eslint.config.mjs` defines import groups: `builtin` → `type` → `external` → `internal` → `parent` → `sibling` → `index` with `newlines-between: always` and alphabetical ordering. The `@blockseblock/shared` package resolves as `external`, not `internal`.
+**Eslint config context:** Root `eslint.config.mjs` defines import groups: `builtin` → `type` → `external` → `internal` → `parent` → `sibling` → `index` with `newlines-between: always` and alphabetical ordering. The `@CivicLens/shared` package resolves as `external`, not `internal`.
 
 **Remaining:** Pre-existing errors in `apps/web/` need a project-wide lint pass. The functions package has an OOM issue with ESLint's type-checked config on Windows.
 
@@ -152,7 +152,7 @@ Firebase (Firestore + Auth + Storage + Cloud Functions + Hosting)
 ## Directory Structure
 
 ```
-blockseblock/
+CivicLens/
 ├── AGENTS.md                          ← THIS FILE
 ├── apps/
 │   ├── web/                           # React 19 SPA (Vite 8)
@@ -633,7 +633,7 @@ All barrel-exported from `index.ts`. Most are thin wrappers around [Radix UI](ht
 ## Shared Package (`packages/shared/`)
 
 ### Constants (`constants/index.ts`)
-- `APP_NAME` — "BlockSeBlock"
+- `APP_NAME` — "CivicLens"
 - `COLLECTIONS` — Firestore collection name map
 - `HTTP_STATUS` — HTTP status code constants
 - Enum value arrays for all enum types
@@ -692,7 +692,7 @@ FIREBASE_FUNCTIONS_REGION=us-central1
 ## Key Conventions
 
 - **Files**: features lowercase/kebab, components PascalCase, services camelCase.service.ts
-- **Imports**: external → `@blockseblock/shared` → `@/` alias → relative
+- **Imports**: external → `@CivicLens/shared` → `@/` alias → relative
 - **Components**: functional only, lazy-loaded pages, hooks for logic
 - **Error handling**: services return null for not-found, Firebase errors propagate, UI handles via React Query loading/error states
 - **Services**: plain objects with async methods (not classes)

@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Navigate, Outlet } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
-import type { UserRole } from '@blockseblock/shared';
+import type { UserRole } from '@civiclens/shared';
 import { PageLoader } from './PageLoader';
 import { AuthService } from '@/services/auth.service';
 

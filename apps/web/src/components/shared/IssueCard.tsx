@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import type { Issue } from '@blockseblock/shared';
+import type { Issue } from '@civiclens/shared';
 import { MapPin, ChevronRight } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';

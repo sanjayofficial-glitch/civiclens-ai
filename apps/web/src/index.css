@@ -2,7 +2,7 @@
 @import 'tw-animate-css';
 
 /* =========================================================================
-   BlockSeBlock Design System — Tokens
+   CivicLens Design System — Tokens
    Tailwind v4 CSS-first config. Semantic tokens are CSS variables so dark
    mode works by toggling a class on <html>. Brand accent follows the
    existing scaffold violet (#aa3bff), ramped to a full scale.

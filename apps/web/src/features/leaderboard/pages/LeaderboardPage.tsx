@@ -14,7 +14,7 @@ import { useLeaderboard } from '@/hooks/data/useLeaderboard';
 import { useAuth } from '@/hooks/useAuth';
 import { useUser } from '@/hooks/data/useUser';
 import { BADGES } from '@/lib/constants';
-import type { LeaderboardPeriod } from '@blockseblock/shared';
+import type { LeaderboardPeriod } from '@civiclens/shared';
 import { cn } from '@/lib/utils';
 
 const PERIODS: { value: LeaderboardPeriod; label: string }[] = [

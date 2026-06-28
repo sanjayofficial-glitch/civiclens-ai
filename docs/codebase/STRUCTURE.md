@@ -3,7 +3,7 @@
 ## Root Layout
 
 ```
-blockseblock/
+CivicLens/
 ├── apps/
 │   ├── web/              # React SPA (Vite)
 │   └── functions/        # Firebase Cloud Functions

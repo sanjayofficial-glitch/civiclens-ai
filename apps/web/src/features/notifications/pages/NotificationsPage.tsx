@@ -10,7 +10,7 @@ import {
   Sparkles,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
-import { timestampToDate, type NotificationType, type Notification } from '@blockseblock/shared';
+import { timestampToDate, type NotificationType, type Notification } from '@civiclens/shared';
 import { AppLayout, PageHeader } from '@/components/layout/AppLayout';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';

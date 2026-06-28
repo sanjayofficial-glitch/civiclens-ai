@@ -1,6 +1,6 @@
 import { collection, doc, addDoc, getDoc, updateDoc, deleteDoc, query, where, orderBy, limit, startAfter, onSnapshot, getDocs, QueryConstraint, DocumentSnapshot, increment } from 'firebase/firestore';
 import { db } from '../lib/firebase/firestore.service';
-import type { Issue, IssueStatus, IssueCategory, IssueSeverity } from '@blockseblock/shared';
+import type { Issue, IssueStatus, IssueCategory, IssueSeverity } from '@civiclens/shared';
 import { issueConverter } from './converters';
 
 const ISSUES_COLLECTION = 'issues';

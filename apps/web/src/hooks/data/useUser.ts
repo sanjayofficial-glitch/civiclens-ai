@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../useAuth';
-import type { User as DomainUser } from '@blockseblock/shared';
+import type { User as DomainUser } from '@civiclens/shared';
 import { onSnapshot, doc } from 'firebase/firestore';
 import { db } from '../../lib/firebase/firestore.service';
 import { userConverter } from '../../services/converters';

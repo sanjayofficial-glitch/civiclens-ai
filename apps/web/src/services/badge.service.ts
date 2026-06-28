@@ -1,6 +1,6 @@
 import { doc, updateDoc, arrayUnion } from 'firebase/firestore';
 import { db } from '../lib/firebase/firestore.service';
-import type { User } from '@blockseblock/shared';
+import type { User } from '@civiclens/shared';
 
 const USERS_COLLECTION = 'users';
 

@@ -2,7 +2,7 @@
 
 ## High-Level Overview
 
-BlockSeBlock is a civic issue reporting platform where citizens report urban problems (potholes, streetlights, water leaks, etc.), AI analyzes reports, and government officials track resolution.
+CivicLens is a civic issue reporting platform where citizens report urban problems (potholes, streetlights, water leaks, etc.), AI analyzes reports, and government officials track resolution.
 
 ```
 ┌─────────────────────────────────────────────────────────────┐

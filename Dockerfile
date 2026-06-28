@@ -17,7 +17,7 @@ RUN npm ci
 COPY . .
 
 # Build web app
-RUN npx turbo run build --filter=@blockseblock/web
+RUN npx turbo run build --filter=web
 
 # Production server
 FROM nginx:alpine

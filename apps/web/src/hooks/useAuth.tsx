@@ -2,7 +2,7 @@ import { useState, useEffect, createContext, useContext } from 'react';
 import { onAuthStateChanged } from 'firebase/auth';
 import type { User } from 'firebase/auth';
 import { auth } from '../lib/firebase/auth';
-import type { UserRole } from '@blockseblock/shared';
+import type { UserRole } from '@civiclens/shared';
 import { UserService } from '@/services/user.service';
 
 interface AuthContextType {

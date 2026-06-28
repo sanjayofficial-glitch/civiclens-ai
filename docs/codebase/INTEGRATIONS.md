@@ -54,7 +54,7 @@ From `apps/web/src/services/auth.service.ts`:
 
 ## Internal Integrations
 
-### Shared Package (`@blockseblock/shared`)
+### Shared Package (`@CivicLens/shared`)
 
 Used by both `apps/web` and `apps/functions`:
 - Zod schemas for validation

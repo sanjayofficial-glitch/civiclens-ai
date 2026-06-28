@@ -1,5 +1,5 @@
 import { useLocation } from 'react-router-dom';
-import type { UserRole } from '@blockseblock/shared';
+import type { UserRole } from '@civiclens/shared';
 import { ProtectedRouteAuth } from './ProtectedRouteAuth';
 
 interface ProtectedRouteProps {

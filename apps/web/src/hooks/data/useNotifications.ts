@@ -1,4 +1,4 @@
-import type { Notification } from '@blockseblock/shared';
+import type { Notification } from '@civiclens/shared';
 
 import { useState, useEffect, useCallback } from 'react';
 

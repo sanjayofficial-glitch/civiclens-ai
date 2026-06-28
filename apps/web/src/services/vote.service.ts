@@ -1,6 +1,6 @@
 import { doc, getDoc } from 'firebase/firestore';
 import { db, runTransaction } from '../lib/firebase/firestore.service';
-import type { Vote, VoteType } from '@blockseblock/shared';
+import type { Vote, VoteType } from '@civiclens/shared';
 import { voteConverter } from './converters';
 
 const VOTES_COLLECTION = 'votes';

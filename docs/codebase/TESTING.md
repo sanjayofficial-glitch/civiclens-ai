@@ -27,7 +27,7 @@ Tests are located in `apps/functions/src/__tests__/` and run via **Vitest 4.1.9*
 
 ```bash
 # Run all function tests
-npm run test --workspace=@blockseblock/functions
+npm run test --workspace=@CivicLens/functions
 
 # Or from apps/functions directory
 cd apps/functions && npx vitest run

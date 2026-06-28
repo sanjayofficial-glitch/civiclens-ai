@@ -1,4 +1,4 @@
-# BlockSeBlock — Hackathon Presentation Polish Plan
+# CivicLens — Hackathon Presentation Polish Plan
 
 > **Goal:** Make this app demo-ready — polished, impressive, and narratively compelling for a live/recorded hackathon presentation.
 
@@ -193,7 +193,7 @@ const pageVariants = {
    - Dynamic Island shows scanning animation
    - Results appear with typewriter effect: "Category: Pothole (95% confidence)"
    - "Severity: High" — "Suggested description: Deep pothole near crosswalk"
-   - "This is what makes BlockSeBlock different — AI understands the problem"
+   - "This is what makes CivicLens different — AI understands the problem"
 9. **Step 4:** Quick review, tap "Submit"
 10. **Step 5:** Success screen with confetti + "Report shared with your city!"
 
@@ -206,7 +206,7 @@ const pageVariants = {
 **Act 4 — The Payoff (30s)**
 15. Show NotificationsPage → "You'll even get notified when the city takes action"
 16. Show ProfilePage → badges earned, streak maintained
-17. "BlockSeBlock turns frustration into action — AI-powered civic engagement"
+17. "CivicLens turns frustration into action — AI-powered civic engagement"
 
 ### 4.2 Seeded Data Requirements
 Run a seed script before the demo to create:
@@ -234,7 +234,7 @@ Run a seed script before the demo to create:
 
 ### 4.4 Judging Criteria Mapping
 
-| Criteria | How BlockSeBlock delivers | Key moment in demo |
+| Criteria | How CivicLens delivers | Key moment in demo |
 |----------|--------------------------|--------------------|
 | **Innovation** | AI-powered issue classification + severity analysis | AI Analysis step in wizard |
 | **Technical complexity** | Real-time Firestore, Gemini AI, Leaflet maps, offline queue, Dynamic Island | Multi-step wizard + real-time map updates |
