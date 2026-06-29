@@ -1,4 +1,4 @@
-import { useState, useCallback, useMemo } from 'react';
+import { useState, useCallback, useMemo, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import {
   Settings,
@@ -42,6 +42,7 @@ import { AuthService } from '@/services/auth.service';
 import { useAuth } from '@/hooks/useAuth';
 import { auth } from '@/lib/firebase/auth';
 import { UserService } from '@/services/user.service';
+import { uploadFile, getFileDownloadURL } from '@/lib/firebase/storage';
 
 export default function ProfilePage() {
   const [refreshKey, setRefreshKey] = useState(0);
@@ -55,6 +56,8 @@ export default function ProfilePage() {
   const [editPhone, setEditPhone] = useState('');
   const [editPhoto, setEditPhoto] = useState('');
   const [updating, setUpdating] = useState(false);
+  const [uploadingPhoto, setUploadingPhoto] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const openEditDialog = useCallback(() => {
     setEditName(user?.displayName || authUser?.displayName || '');
@@ -62,6 +65,44 @@ export default function ProfilePage() {
     setEditPhoto(user?.photoURL || '');
     setIsEditDialogOpen(true);
   }, [user, authUser]);
+
+  const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !authUser) return;
+
+    if (!file.type.startsWith('image/')) {
+      toast.error('Please select an image file.');
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error('Image size must be less than 5MB.');
+      return;
+    }
+
+    setUploadingPhoto(true);
+    try {
+      const path = `users/${authUser.uid}/profile_${Date.now()}`;
+      const uploadTask = uploadFile(file, path);
+
+      await new Promise((resolve, reject) => {
+        uploadTask.on(
+          'state_changed',
+          null,
+          (err) => reject(err),
+          () => resolve(null),
+        );
+      });
+
+      const downloadUrl = await getFileDownloadURL(path);
+      setEditPhoto(downloadUrl);
+      toast.success('Photo uploaded successfully!');
+    } catch (err) {
+      console.error('Failed to upload photo:', err);
+      toast.error('Failed to upload photo. Please try again.');
+    } finally {
+      setUploadingPhoto(false);
+    }
+  };
 
   const handleSaveProfile = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -392,6 +433,34 @@ export default function ProfilePage() {
               </DialogDescription>
             </DialogHeader>
             <div className="space-y-3">
+              <div className="flex flex-col items-center gap-3 py-2">
+                <Avatar className="size-20 ring-2 ring-primary/20 ring-offset-2 ring-offset-background">
+                  {editPhoto && <AvatarImage src={editPhoto} alt="Preview" />}
+                  <AvatarFallback className="bg-primary/15 text-2xl font-bold text-primary">
+                    {editName ? editName.slice(0, 2).toUpperCase() : 'CU'}
+                  </AvatarFallback>
+                </Avatar>
+
+                <input
+                  type="file"
+                  ref={fileInputRef}
+                  onChange={handlePhotoUpload}
+                  accept="image/*"
+                  className="hidden"
+                  disabled={updating || uploadingPhoto}
+                />
+
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={updating || uploadingPhoto}
+                >
+                  {uploadingPhoto ? 'Uploading...' : 'Upload New Photo'}
+                </Button>
+              </div>
+
               <div className="space-y-1">
                 <Label htmlFor="displayName">Name</Label>
                 <Input
@@ -400,7 +469,7 @@ export default function ProfilePage() {
                   onChange={(e) => setEditName(e.target.value)}
                   placeholder="Your name"
                   required
-                  disabled={updating}
+                  disabled={updating || uploadingPhoto}
                 />
               </div>
               <div className="space-y-1">
@@ -410,17 +479,7 @@ export default function ProfilePage() {
                   value={editPhone}
                   onChange={(e) => setEditPhone(e.target.value)}
                   placeholder="Your phone number"
-                  disabled={updating}
-                />
-              </div>
-              <div className="space-y-1">
-                <Label htmlFor="photoURL">Avatar URL</Label>
-                <Input
-                  id="photoURL"
-                  value={editPhoto}
-                  onChange={(e) => setEditPhoto(e.target.value)}
-                  placeholder="Avatar image URL"
-                  disabled={updating}
+                  disabled={updating || uploadingPhoto}
                 />
               </div>
             </div>
@@ -429,11 +488,11 @@ export default function ProfilePage() {
                 type="button"
                 variant="ghost"
                 onClick={() => setIsEditDialogOpen(false)}
-                disabled={updating}
+                disabled={updating || uploadingPhoto}
               >
                 Cancel
               </Button>
-              <Button type="submit" disabled={updating}>
+              <Button type="submit" disabled={updating || uploadingPhoto}>
                 {updating ? 'Saving...' : 'Save Changes'}
               </Button>
             </DialogFooter>
