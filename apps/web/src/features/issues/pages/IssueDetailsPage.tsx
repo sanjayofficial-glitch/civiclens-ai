@@ -339,24 +339,28 @@ export default function IssueDetailsPage() {
           <section aria-label="Community verification">
             <h2 className="mb-3 text-sm font-semibold">Community Verification</h2>
             <div className="flex items-center gap-3">
-              <Button
-                variant={userVote === 'upvote' ? 'default' : 'outline'}
-                size="sm"
-                onClick={() => handleVote('upvote')}
-                className="gap-1.5"
-              >
-                <ThumbsUp className="size-4" aria-hidden="true" />
-                {issue.verification?.upvotes ?? 0}
-              </Button>
-              <Button
-                variant={userVote === 'downvote' ? 'default' : 'outline'}
-                size="sm"
-                onClick={() => handleVote('downvote')}
-                className="gap-1.5"
-              >
-                <ThumbsDown className="size-4" aria-hidden="true" />
-                {issue.verification?.downvotes ?? 0}
-              </Button>
+              <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                <Button
+                  variant={userVote === 'upvote' ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => handleVote('upvote')}
+                  className="gap-1.5"
+                >
+                  <ThumbsUp className="size-4" aria-hidden="true" />
+                  {issue.verification?.upvotes ?? 0}
+                </Button>
+              </motion.div>
+              <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                <Button
+                  variant={userVote === 'downvote' ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => handleVote('downvote')}
+                  className="gap-1.5"
+                >
+                  <ThumbsDown className="size-4" aria-hidden="true" />
+                  {issue.verification?.downvotes ?? 0}
+                </Button>
+              </motion.div>
               <span className="text-xs text-muted-foreground">
                 {(issue.verification?.verifiedBy ?? []).length} verified
               </span>

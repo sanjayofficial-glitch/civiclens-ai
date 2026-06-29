@@ -219,6 +219,15 @@ export default function ReportWizardPage() {
   }, [draft.title, draft.description, user, setIslandState]);
 
   const next = async () => {
+    if (step === 0 && !displayPhoto) {
+      toast.error('Please capture or select a photo to proceed.');
+      return;
+    }
+    if (step === 2 && !draft.hasCustomLocation) {
+      toast.error('Please select a location on the map or search for an address.');
+      return;
+    }
+
     // Step 2 → 3: move to AI step immediately, run upload + AI in background
     if (step === 2) {
       update({ step: 3 });
@@ -541,11 +550,33 @@ export default function ReportWizardPage() {
               {aiLoading ? (
                 <Card>
                   <CardContent className="flex flex-col items-center py-12">
+                    <style>{`
+                      @keyframes scan {
+                        0%, 100% { transform: translateY(0); }
+                        50% { transform: translateY(126px); }
+                      }
+                    `}</style>
                     <Sparkles className="mb-3 size-10 animate-pulse text-primary" />
                     <p className="font-medium">Analyzing your photo…</p>
                     <p className="mt-1 text-sm text-muted-foreground">Usually takes 2–5 seconds</p>
                     {displayPhoto && (
-                      <img src={displayPhoto} alt="" className="mt-4 h-24 w-24 rounded-xl object-cover opacity-60" />
+                      <div className="relative mt-4 h-32 w-32 rounded-xl overflow-hidden shadow-lg border border-primary/20">
+                        <img src={displayPhoto} alt="" className="size-full object-cover opacity-85" />
+                        <div 
+                          className="absolute left-0 right-0 h-[2.5px] bg-primary shadow-[0_0_10px_var(--primary),0_0_4px_var(--primary)]"
+                          style={{
+                            top: 0,
+                            animation: 'scan 2.5s ease-in-out infinite',
+                          }}
+                        />
+                        <div 
+                          className="absolute left-0 right-0 top-0 bg-gradient-to-b from-primary/20 to-transparent"
+                          style={{
+                            height: '24px',
+                            animation: 'scan 2.5s ease-in-out infinite',
+                          }}
+                        />
+                      </div>
                     )}
                   </CardContent>
                 </Card>
