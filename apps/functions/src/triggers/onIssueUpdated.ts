@@ -11,9 +11,6 @@ export const onIssueUpdated = functions.firestore
   .onUpdate(async (change, context) => {
     const before = change.before.data();
     const after = change.after.data();
-    if (!before || !after) {
-      return;
-    }
 
     if (before.status !== after.status) {
       const reporterId = String(after.reporterId ?? '');
@@ -23,7 +20,10 @@ export const onIssueUpdated = functions.firestore
           type: 'issue_update',
           title: 'Issue status changed',
           body: `Your report is now ${String(after.status)}.`,
-          data: { issueId: context.params.issueId, status: String(after.status) },
+          data: {
+            issueId: context.params.issueId,
+            status: String(after.status),
+          },
         });
       }
 
