@@ -171,11 +171,24 @@ export const AnalyticsService = {
 
   getStatusDistribution: async (): Promise<StatusMetric[]> => {
     const snap = await getDocs(collection(db, 'issues'));
-    const counts: Record<string, number> = {};
+    const counts: Record<string, number> = {
+      reported: 0,
+      verified: 0,
+      in_progress: 0,
+      resolved: 0,
+      rejected: 0,
+    };
     
     snap.docs.forEach((d) => {
       const issue = d.data();
-      const status = issue.status || 'reported';
+      let status = issue.status || 'reported';
+      
+      // If the issue is 'reported' but has community verifications (upvotes),
+      // represent it as 'verified' in the status distribution chart.
+      if (status === 'reported' && (issue.verification?.upvotes || 0) > 0) {
+        status = 'verified';
+      }
+      
       counts[status] = (counts[status] || 0) + 1;
     });
 
