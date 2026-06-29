@@ -45,7 +45,6 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { formatRelativeTime } from '@/lib/constants';
@@ -145,6 +144,17 @@ export default function IssueDetailsPage() {
     }
     await VoteService.castVote(id, user.uid, type);
     setUserVote(userVote === type ? null : type);
+  };
+
+  const handleResolve = async () => {
+    if (!id) return;
+    try {
+      await IssueService.update(id, { status: 'resolved' });
+      toast.success('Issue marked as resolved! Thank you for helping the community.');
+    } catch (err) {
+      console.error('Failed to resolve issue:', err);
+      toast.error('Failed to update issue status.');
+    }
   };
 
   const handleComment = async () => {
@@ -434,6 +444,25 @@ export default function IssueDetailsPage() {
                     </div>
                   );
                 })}
+              </div>
+            )}
+
+            {isOwner && issue.status !== 'resolved' && issue.status !== 'rejected' && (
+              <div className="mt-5 rounded-xl border border-emerald-500/25 bg-emerald-500/5 p-3.5 flex items-center justify-between gap-4">
+                <div className="min-w-0 flex-1">
+                  <p className="text-sm font-semibold text-emerald-800">Is this issue resolved?</p>
+                  <p className="text-xs text-muted-foreground leading-normal mt-0.5">
+                    If this problem has been fixed, you can mark it as resolved to close the report.
+                  </p>
+                </div>
+                <Button
+                  size="sm"
+                  onClick={handleResolve}
+                  className="shrink-0 bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm"
+                >
+                  <CheckCircle2 className="mr-1.5 size-4" />
+                  Resolve
+                </Button>
               </div>
             )}
           </section>
