@@ -1,4 +1,4 @@
-import { doc, getDoc } from 'firebase/firestore';
+import { addDoc, collection, doc, getDoc } from 'firebase/firestore';
 import { db, runTransaction } from '../lib/firebase/firestore.service';
 import type { Vote, VoteType } from '@civiclens/shared';
 import { voteConverter } from './converters';
@@ -11,6 +11,8 @@ export const VoteService = {
     const voteId = `${issueId}_${userId}`;
     const voteRef = doc(db, VOTES_COLLECTION, voteId).withConverter(voteConverter);
     const issueRef = doc(db, ISSUES_COLLECTION, issueId);
+    let reporterId: string | undefined;
+    let issueTitle: string | undefined;
 
     await runTransaction(db, async (transaction) => {
       const voteSnap = await transaction.get(voteRef);
@@ -19,6 +21,8 @@ export const VoteService = {
       if (!issueSnap.exists()) throw new Error("Issue does not exist");
       
       const issueData = issueSnap.data();
+      reporterId = issueData.reporterId;
+      issueTitle = issueData.title;
       let upvotes = issueData.verification?.upvotes || 0;
       let downvotes = issueData.verification?.downvotes || 0;
       let verifiedBy = issueData.verification?.verifiedBy || [];
@@ -76,6 +80,23 @@ export const VoteService = {
         'verification.verifiedBy': verifiedBy
       });
     });
+
+    // Create notification for issue reporter on upvote
+    if (type === 'upvote' && reporterId && reporterId !== userId) {
+      const notificationsRef = collection(db, 'notifications');
+      await addDoc(notificationsRef, {
+        userId: reporterId,
+        type: 'vote',
+        title: 'Your issue was verified',
+        body: `Someone verified your issue: ${issueTitle || 'Untitled'}`,
+        data: {
+          issueId,
+          voterId: userId,
+        },
+        read: false,
+        createdAt: new Date().toISOString(),
+      });
+    }
   },
 
   getUserVoteForIssue: async (issueId: string, userId: string) => {
