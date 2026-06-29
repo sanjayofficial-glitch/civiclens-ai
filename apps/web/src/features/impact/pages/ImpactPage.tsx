@@ -69,7 +69,7 @@ export default function ImpactPage() {
 
   const maxDaily = useMemo(() => {
     if (!impact?.days.length) return 0;
-    return Math.max(...impact.days.map((d) => Math.max(d.newIssues, d.verifications, d.comments)), 1);
+    return Math.max(...impact.days.map((d) => d.newIssues + d.verifications + d.comments), 1);
   }, [impact]);
 
   const maxCat = useMemo(() => {
