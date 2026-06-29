@@ -24,8 +24,12 @@ export const addComment = onCall(async (request) => {
     issueId: input.issueId,
     userId: request.auth.uid,
     text: input.text,
-    userName: userData?.displayName || 'Citizen',
-    userPhoto: userData?.photoURL || null,
+    userName:
+      typeof userData?.displayName === 'string'
+        ? userData.displayName
+        : 'Citizen',
+    userPhoto:
+      typeof userData?.photoURL === 'string' ? userData.photoURL : null,
     createdAt: FieldValue.serverTimestamp(),
   });
 

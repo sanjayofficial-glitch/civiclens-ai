@@ -3,7 +3,6 @@ import {
   Home,
   Map as MapIcon,
   Camera,
-  Trophy,
   User,
   Sparkles,
   WifiOff,

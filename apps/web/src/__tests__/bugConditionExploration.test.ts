@@ -73,7 +73,7 @@ describe('Test 2 — Upload path (Bug Condition)', () => {
     const unfixedPath = `issues/${Date.now()}_${idx}_${Math.random().toString(36).slice(2)}`;
 
     // ---- What the fixed path SHOULD look like ----
-    const fixedPath = `users/${userId}/issue/${Date.now()}_${idx}_photo${idx}.jpg`;
+    const _fixedPath = `users/${userId}/issue/${Date.now()}_${idx}_photo${idx}.jpg`;
 
     // The test captures the ACTUAL path from UploadService by importing and spying
     const { UploadService } = await import('../services/upload.service');
@@ -199,7 +199,7 @@ describe('Test 3 — GPS stale cache (Bug Condition)', () => {
     // Since maximumAge:0 means the browser must NOT use cached positions,
     // a 25-second-old position should never be returned.
     // On unfixed code the stale Kolkata position IS returned.
-    const positionAgeMs = Date.now() - result.coords.accuracy; // indirect freshness check
+    const _positionAgeMs = Date.now() - result.coords.accuracy; // indirect freshness check
     // More direct: check that the unfixed stale Kolkata coords were NOT used
     expect(
       result.coords.latitude,

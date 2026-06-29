@@ -1,5 +1,4 @@
 import { useMemo } from 'react';
-import { motion } from 'framer-motion';
 import {
   TrendingUp,
   BarChart3,
@@ -13,7 +12,6 @@ import { useImpactMetrics, useCategoryBreakdown, useStatusDistribution } from '@
 import { getCategoryMeta } from '@/lib/issue-meta';
 import { CATEGORY_OPTIONS } from '@/lib/constants';
 import { cn } from '@/lib/utils';
-import type { IssueCategory } from '@civiclens/shared';
 
 const DAY_LABELS: Record<string, string> = {
   '0': 'Mon',
