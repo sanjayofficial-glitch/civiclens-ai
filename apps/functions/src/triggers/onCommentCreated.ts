@@ -1,4 +1,4 @@
-import { onDocumentCreated } from 'firebase-functions/v2/firestore';
+import * as functions from 'firebase-functions/v1';
 
 import { DEFAULT_REPUTATION } from '../config';
 import { db } from '../lib/firebase';
@@ -6,14 +6,9 @@ import { recordDailyMetrics } from '../services/analyticsService';
 import { createNotification } from '../services/notificationService';
 import { adjustReputation } from '../services/reputationService';
 
-export const onCommentCreated = onDocumentCreated(
-  { document: 'comments/{commentId}', region: 'us-central1' },
-  async (event) => {
-    const snap = event.data;
-    if (!snap) {
-      return;
-    }
-
+export const onCommentCreated = functions.firestore
+  .document('comments/{commentId}')
+  .onCreate(async (snap) => {
     const comment = snap.data() as {
       issueId?: string;
       userId?: string;
@@ -42,5 +37,4 @@ export const onCommentCreated = onDocumentCreated(
         data: { issueId: comment.issueId, commentId: snap.id },
       });
     }
-  },
-);
+  });

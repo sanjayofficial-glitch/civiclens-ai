@@ -1,4 +1,4 @@
-import { onDocumentCreated } from 'firebase-functions/v2/firestore';
+import * as functions from 'firebase-functions/v1';
 
 import { DEFAULT_REPUTATION } from '../config';
 import { db } from '../lib/firebase';
@@ -13,14 +13,9 @@ import {
 import { createNotification } from '../services/notificationService';
 import { adjustReputation } from '../services/reputationService';
 
-export const onVoteCreated = onDocumentCreated(
-  { document: 'votes/{voteId}', region: 'us-central1' },
-  async (event) => {
-    const snap = event.data;
-    if (!snap) {
-      return;
-    }
-
+export const onVoteCreated = functions.firestore
+  .document('votes/{voteId}')
+  .onCreate(async (snap) => {
     const vote = snap.data() as {
       issueId?: string;
       userId?: string;
@@ -61,5 +56,4 @@ export const onVoteCreated = onDocumentCreated(
         data: { issueId: vote.issueId, voteType: vote.type },
       });
     }
-  },
-);
+  });

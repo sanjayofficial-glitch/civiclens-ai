@@ -1,4 +1,4 @@
-import { onDocumentUpdated } from 'firebase-functions/v2/firestore';
+import * as functions from 'firebase-functions/v1';
 
 import {
   recordAnalyticsEvent,
@@ -6,11 +6,11 @@ import {
 } from '../services/analyticsService';
 import { createNotification } from '../services/notificationService';
 
-export const onIssueUpdated = onDocumentUpdated(
-  { document: 'issues/{issueId}', region: 'us-central1' },
-  async (event) => {
-    const before = event.data?.before.data();
-    const after = event.data?.after.data();
+export const onIssueUpdated = functions.firestore
+  .document('issues/{issueId}')
+  .onUpdate(async (change, context) => {
+    const before = change.before.data();
+    const after = change.after.data();
     if (!before || !after) {
       return;
     }
@@ -23,7 +23,7 @@ export const onIssueUpdated = onDocumentUpdated(
           type: 'issue_update',
           title: 'Issue status changed',
           body: `Your report is now ${String(after.status)}.`,
-          data: { issueId: event.params.issueId, status: String(after.status) },
+          data: { issueId: context.params.issueId, status: String(after.status) },
         });
       }
 
@@ -64,5 +64,4 @@ export const onIssueUpdated = onDocumentUpdated(
         resolvedIssues: 1,
       });
     }
-  },
-);
+  });
