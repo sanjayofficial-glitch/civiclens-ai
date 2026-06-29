@@ -3,6 +3,7 @@ import type { IssueAnalysisResult } from '../types';
 import { onCall } from 'firebase-functions/v2/https';
 import { z } from 'zod';
 
+import { REGION } from '../config';
 import { assertAuth, fail } from '../lib/errors';
 import { db, FieldValue } from '../lib/firebase';
 import { parseInput } from '../lib/validation';
@@ -40,7 +41,7 @@ function toAiSuggestion(analysis: IssueAnalysisResult) {
   };
 }
 
-export const analyzeIssueImage = onCall(async (request) => {
+export const analyzeIssueImage = onCall({ region: REGION }, async (request) => {
   assertAuth(request.auth);
 
   // Try directSchema first (wizard mode), fall back to issueIdSchema

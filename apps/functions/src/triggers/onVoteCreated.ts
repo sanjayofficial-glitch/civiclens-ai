@@ -1,6 +1,6 @@
 import * as functions from 'firebase-functions/v1';
 
-import { DEFAULT_REPUTATION } from '../config';
+import { REGION, DEFAULT_REPUTATION } from '../config';
 import { db } from '../lib/firebase';
 import {
   recordDailyMetrics,
@@ -13,8 +13,9 @@ import {
 import { createNotification } from '../services/notificationService';
 import { adjustReputation } from '../services/reputationService';
 
-export const onVoteCreated = functions.firestore
-  .document('votes/{voteId}')
+export const onVoteCreated = functions
+  .region(REGION)
+  .firestore.document('votes/{voteId}')
   .onCreate(async (snap) => {
     const vote = snap.data() as {
       issueId?: string;

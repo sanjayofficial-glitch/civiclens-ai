@@ -1,13 +1,15 @@
 import * as functions from 'firebase-functions/v1';
 
+import { REGION } from '../config';
 import {
   recordAnalyticsEvent,
   recordStatusMetrics,
 } from '../services/analyticsService';
 import { createNotification } from '../services/notificationService';
 
-export const onIssueUpdated = functions.firestore
-  .document('issues/{issueId}')
+export const onIssueUpdated = functions
+  .region(REGION)
+  .firestore.document('issues/{issueId}')
   .onUpdate(async (change, context) => {
     const before = change.before.data();
     const after = change.after.data();

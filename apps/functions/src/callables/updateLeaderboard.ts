@@ -1,6 +1,7 @@
 import { onCall } from 'firebase-functions/v2/https';
 import { z } from 'zod';
 
+import { REGION } from '../config';
 import { assertAuth, fail } from '../lib/errors';
 import { parseInput } from '../lib/validation';
 import { isPrivilegedRole, normalizeRole } from '../services/authService';
@@ -10,7 +11,7 @@ const schema = z.object({
   period: z.enum(['weekly', 'monthly', 'all_time']).default('all_time'),
 });
 
-export const updateLeaderboard = onCall(async (request) => {
+export const updateLeaderboard = onCall({ region: REGION }, async (request) => {
   assertAuth(request.auth);
 
   const role = normalizeRole((request.auth.token as { role?: unknown }).role);

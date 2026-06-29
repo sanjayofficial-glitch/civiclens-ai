@@ -1,13 +1,14 @@
 import * as functions from 'firebase-functions/v1';
 
-import { DEFAULT_REPUTATION } from '../config';
+import { REGION, DEFAULT_REPUTATION } from '../config';
 import { db } from '../lib/firebase';
 import { recordDailyMetrics } from '../services/analyticsService';
 import { createNotification } from '../services/notificationService';
 import { adjustReputation } from '../services/reputationService';
 
-export const onCommentCreated = functions.firestore
-  .document('comments/{commentId}')
+export const onCommentCreated = functions
+  .region(REGION)
+  .firestore.document('comments/{commentId}')
   .onCreate(async (snap) => {
     const comment = snap.data() as {
       issueId?: string;

@@ -1,5 +1,6 @@
 import * as functions from 'firebase-functions/v1';
 
+import { REGION } from '../config';
 import { log } from '../lib/logger';
 import {
   recordDailyMetrics,
@@ -9,8 +10,9 @@ import {
 } from '../services/analyticsService';
 import { enrichIssueOnCreate } from '../services/issueService';
 
-export const onIssueCreated = functions.firestore
-  .document('issues/{issueId}')
+export const onIssueCreated = functions
+  .region(REGION)
+  .firestore.document('issues/{issueId}')
   .onCreate(async (snap, context) => {
     const issueId = context.params.issueId;
 

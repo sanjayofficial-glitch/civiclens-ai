@@ -1,6 +1,7 @@
 import { onCall } from 'firebase-functions/v2/https';
 import { z } from 'zod';
 
+import { REGION } from '../config';
 import { assertAuth } from '../lib/errors';
 import { FieldValue, db } from '../lib/firebase';
 import { parseInput } from '../lib/validation';
@@ -10,7 +11,7 @@ const schema = z.object({
   text: z.string().min(1).max(2000),
 });
 
-export const addComment = onCall(async (request) => {
+export const addComment = onCall({ region: REGION }, async (request) => {
   assertAuth(request.auth);
   const input = parseInput<{ issueId: string; text: string }>(
     schema,
