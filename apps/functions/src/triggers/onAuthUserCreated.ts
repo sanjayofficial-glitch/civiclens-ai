@@ -1,6 +1,6 @@
 import type { UserRecord } from 'firebase-admin/auth';
 
-import * as functions from 'firebase-functions';
+import * as functions from 'firebase-functions/v1';
 
 import { FieldValue, db, auth } from '../lib/firebase';
 import { log } from '../lib/logger';
