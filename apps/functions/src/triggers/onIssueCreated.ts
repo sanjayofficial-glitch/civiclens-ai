@@ -12,8 +12,8 @@ import {
 } from '../services/analyticsService';
 import { enrichIssueOnCreate } from '../services/issueService';
 
-export const handleIssueCreated = onDocumentCreated(
-  'issues/{issueId}',
+export const onIssueCreated = onDocumentCreated(
+  { document: 'issues/{issueId}', region: 'us-central1' },
   async (
     event: FirestoreEvent<
       QueryDocumentSnapshot | undefined,

@@ -13,8 +13,8 @@ import {
 import { createNotification } from '../services/notificationService';
 import { adjustReputation } from '../services/reputationService';
 
-export const handleVoteCreated = onDocumentCreated(
-  'votes/{voteId}',
+export const onVoteCreated = onDocumentCreated(
+  { document: 'votes/{voteId}', region: 'us-central1' },
   async (event) => {
     const snap = event.data;
     if (!snap) {

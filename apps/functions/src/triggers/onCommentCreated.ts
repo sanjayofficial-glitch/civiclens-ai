@@ -6,8 +6,8 @@ import { recordDailyMetrics } from '../services/analyticsService';
 import { createNotification } from '../services/notificationService';
 import { adjustReputation } from '../services/reputationService';
 
-export const handleCommentCreated = onDocumentCreated(
-  'comments/{commentId}',
+export const onCommentCreated = onDocumentCreated(
+  { document: 'comments/{commentId}', region: 'us-central1' },
   async (event) => {
     const snap = event.data;
     if (!snap) {

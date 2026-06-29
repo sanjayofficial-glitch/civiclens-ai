@@ -6,8 +6,8 @@ import {
 } from '../services/analyticsService';
 import { createNotification } from '../services/notificationService';
 
-export const handleIssueUpdated = onDocumentUpdated(
-  'issues/{issueId}',
+export const onIssueUpdated = onDocumentUpdated(
+  { document: 'issues/{issueId}', region: 'us-central1' },
   async (event) => {
     const before = event.data?.before.data();
     const after = event.data?.after.data();
