@@ -23,8 +23,9 @@
     "zod": "^3.24.1"
   },
   "devDependencies": {
+    "@types/node": "^20.0.0",
     "fast-check": "^3.22.0",
-    "typescript": "^5.0.0",
+    "typescript": "^5.6.0",
     "vitest": "^4.1.9"
   },
   "private": true
