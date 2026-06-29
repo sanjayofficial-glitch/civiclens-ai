@@ -81,7 +81,7 @@ export default function ProfilePage() {
 
     setUploadingPhoto(true);
     try {
-      const path = `users/${authUser.uid}/profile_${Date.now()}`;
+      const path = `users/${authUser.uid}/avatars/profile_${Date.now()}`;
       const uploadTask = uploadFile(file, path);
 
       await new Promise((resolve, reject) => {
