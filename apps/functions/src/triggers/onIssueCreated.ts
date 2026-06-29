@@ -1,4 +1,5 @@
-import * as functions from 'firebase-functions/v1';
+/* eslint-disable @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-argument */
+import * as functions from 'firebase-functions';
 
 import { log } from '../lib/logger';
 import {

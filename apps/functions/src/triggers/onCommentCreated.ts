@@ -1,4 +1,4 @@
-import * as functions from 'firebase-functions/v1';
+import * as functions from 'firebase-functions';
 
 import { DEFAULT_REPUTATION } from '../config';
 import { db } from '../lib/firebase';
