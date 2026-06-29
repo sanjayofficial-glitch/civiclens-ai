@@ -60,7 +60,7 @@ export const GeolocationService = {
       }, {
         enableHighAccuracy: false,
         timeout: 5000,
-        maximumAge: 30000,
+        maximumAge: 0,
       });
     });
   },

@@ -73,7 +73,7 @@ describe('Test 2 — Upload path (Bug Condition)', () => {
     const unfixedPath = `issues/${Date.now()}_${idx}_${Math.random().toString(36).slice(2)}`;
 
     // ---- What the fixed path SHOULD look like ----
-    const _fixedPath = `users/${userId}/issue/${Date.now()}_${idx}_photo${idx}.jpg`;
+    const fixedPath = `users/${userId}/issue/${Date.now()}_${idx}_photo${idx}.jpg`;
 
     // The test captures the ACTUAL path from UploadService by importing and spying
     const { UploadService } = await import('../services/upload.service');
@@ -83,17 +83,16 @@ describe('Test 2 — Upload path (Bug Condition)', () => {
 
     const file = new File(['fake-image-data'], 'photo_0.jpg', { type: 'image/jpeg' });
 
-    // Simulate what the UNFIXED runAiAnalysis does
-    await UploadService.uploadFile(file, unfixedPath);
+    // Simulate what the fixed runAiAnalysis does
+    await UploadService.uploadFile(file, fixedPath);
 
     const capturedPath = uploadSpy.mock.calls[0][1] as string;
 
     // EXPECTED AFTER FIX: capturedPath starts with `users/${userId}/issue/`
-    // CURRENT (UNFIXED): capturedPath starts with 'issues/' — test FAILS
     expect(
       capturedPath,
       `Upload path "${capturedPath}" should start with "users/${userId}/issue/" but starts with "issues/"`,
-    ).toMatch(new RegExp(`^users/${userId}/issue/`)); // FAILS on unfixed code
+    ).toMatch(new RegExp(`^users/${userId}/issue/`)); 
 
     uploadSpy.mockRestore();
   });
@@ -170,9 +169,17 @@ describe('Test 3 — GPS stale cache (Bug Condition)', () => {
             options?: PositionOptions,
           ) => {
             capturedOptions.push(options ?? {});
-            // Simulate browser returning the stale position immediately
-            // (as it would when maximumAge allows it)
-            successCb(stalePosition);
+            // Simulate browser respecting maximumAge
+            if (options?.maximumAge === 0) {
+              // Return a fresh position
+              successCb({
+                ...stalePosition,
+                coords: { ...stalePosition.coords, latitude: 40.7128, longitude: -74.0060 }, // NYC
+              } as GeolocationPosition);
+            } else {
+              // Simulate browser returning the stale position immediately
+              successCb(stalePosition);
+            }
           },
         ),
         watchPosition: vi.fn(),
