@@ -42,7 +42,9 @@ service cloud.firestore {
     match /issues/{issueId} {
       allow read: if true;
       allow create: if signedIn() && request.resource.data.reporterId == request.auth.uid;
-      allow update: if isPrivileged() || (signedIn() && resource.data.reporterId == request.auth.uid);
+      allow update: if isPrivileged()
+        || (signedIn() && resource.data.reporterId == request.auth.uid)
+        || (signedIn() && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['verification']));
       allow delete: if isPrivileged() || (signedIn() && resource.data.reporterId == request.auth.uid);
     }
 
