@@ -17,6 +17,7 @@
                     "node":  "22"
                 },
     "dependencies":  {
+                         "@civiclens/shared": "file:./shared",
                          "firebase-admin":  "^12.7.0",
                          "firebase-functions":  "^6.6.0",
                          "zod":  "^3.24.1"
