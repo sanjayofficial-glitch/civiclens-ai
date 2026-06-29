@@ -1,13 +1,15 @@
-import * as functions from 'firebase-functions';
+import type { UserRecord } from 'firebase-admin/auth';
+
+import { auth as functionsAuth } from 'firebase-functions/v1';
 
 import { FieldValue, db, auth } from '../lib/firebase';
 import { log } from '../lib/logger';
 import { LeaderboardRepository } from '../repositories/leaderboardRepository';
 import { normalizeRole } from '../services/authService';
 
-export const onAuthUserCreated = functions.auth
+export const onAuthUserCreated = functionsAuth
   .user()
-  .onCreate(async (user) => {
+  .onCreate(async (user: UserRecord) => {
     const role = normalizeRole(user.customClaims?.role);
 
     await db
