@@ -1,0 +1,4 @@
+/shared
+/lib
+/node_modules
+*.local
