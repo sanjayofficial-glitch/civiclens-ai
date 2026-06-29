@@ -142,8 +142,13 @@ export default function IssueDetailsPage() {
       toast.error('Sign in to vote on issues.');
       return;
     }
-    await VoteService.castVote(id, user.uid, type);
-    setUserVote(userVote === type ? null : type);
+    try {
+      await VoteService.castVote(id, user.uid, type);
+      setUserVote(userVote === type ? null : type);
+      toast.success(type === 'upvote' ? 'Issue verified!' : 'Vote recorded.');
+    } catch {
+      toast.error('Failed to record vote. Please try again.');
+    }
   };
 
   const handleResolve = async () => {
