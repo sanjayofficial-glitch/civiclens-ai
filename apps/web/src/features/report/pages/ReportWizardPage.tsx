@@ -321,6 +321,19 @@ export default function ReportWizardPage() {
     e.target.value = '';
   };
 
+  const handleRemovePhoto = (i: number) => {
+    const removedUrl = draft.photos[i];
+    if (removedUrl?.startsWith('blob:')) {
+      URL.revokeObjectURL(removedUrl);
+    }
+    const updatedPhotos = draft.photos.filter((_, j) => j !== i);
+    photoBlobs.current = photoBlobs.current.filter((_, j) => j !== i);
+    update({ photos: updatedPhotos });
+    if (i === 0) {
+      update({ localPhoto: null });
+    }
+  };
+
   const handleUseCurrentLocation = async () => {
     setLocating(true);
     try {
@@ -465,11 +478,11 @@ export default function ReportWizardPage() {
               <input type="file" accept="image/*" multiple className="hidden" ref={galleryInputRef} onChange={handleGallerySelect} />
               <div className="grid grid-cols-3 gap-2">
                 {draft.photos.map((p, i) => (
-                  <div key={i} className="relative aspect-square">
+                  <div key={p} className="relative aspect-square">
                     <img src={p} alt="" className="size-full rounded-xl object-cover" />
                     <button
                       type="button"
-                      onClick={() => update({ photos: draft.photos.filter((_, j) => j !== i) })}
+                      onClick={() => handleRemovePhoto(i)}
                       className="absolute -right-1.5 -top-1.5 grid size-5 place-items-center rounded-full bg-destructive text-destructive-foreground text-xs shadow"
                       aria-label="Remove photo"
                     >×</button>
