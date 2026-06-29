@@ -1,8 +1,5 @@
-import { doc, getDoc, getDocs, onSnapshot, collection, query, where } from 'firebase/firestore';
+import { collection, getDocs, onSnapshot } from 'firebase/firestore';
 import { db } from '../lib/firebase/firestore.service';
-
-const ANALYTICS_COLLECTION = 'analytics';
-const GLOBAL_DOC = 'global';
 
 export interface GlobalStats {
   totalReports: number;
@@ -41,14 +38,6 @@ export interface ImpactMetrics {
   totalComments: number;
 }
 
-function dailyDocId(date?: Date): string {
-  const d = date ?? new Date();
-  const y = d.getFullYear();
-  const m = String(d.getMonth() + 1).padStart(2, '0');
-  const day = String(d.getDate()).padStart(2, '0');
-  return `daily_${y}-${m}-${day}`;
-}
-
 function getDateStr(d: Date): string {
   const y = d.getFullYear();
   const m = String(d.getMonth() + 1).padStart(2, '0');
@@ -56,110 +45,189 @@ function getDateStr(d: Date): string {
   return `${y}-${m}-${day}`;
 }
 
-function pluckMetrics(data: Record<string, unknown>): Record<string, number> {
-  const m = data.metrics as Record<string, number> | undefined;
-  return m ?? {};
-}
+const parseDate = (timestamp: any): Date | null => {
+  if (!timestamp) return null;
+  if (typeof timestamp.toDate === 'function') {
+    return timestamp.toDate();
+  }
+  if (timestamp.seconds) {
+    return new Date(timestamp.seconds * 1000);
+  }
+  const d = new Date(timestamp);
+  return isNaN(d.getTime()) ? null : d;
+};
 
 export const AnalyticsService = {
   getCommunityStats: async (): Promise<GlobalStats | null> => {
-    const docRef = doc(db, ANALYTICS_COLLECTION, GLOBAL_DOC);
-    const snap = await getDoc(docRef);
-    if (!snap.exists()) return null;
-    const data = snap.data();
-    const m = (data.metrics as Record<string, number>) || {};
+    const snap = await getDocs(collection(db, 'issues'));
+    const issues = snap.docs.map(d => d.data());
+    
+    const totalReports = issues.length;
+    const activeIssues = issues.filter(
+      i => i.status === 'reported' || i.status === 'verified' || i.status === 'in_progress'
+    ).length;
+    
+    const oneWeekAgo = new Date();
+    oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
+    const resolvedThisWeek = issues.filter(i => {
+      if (i.status !== 'resolved') return false;
+      const resolvedAt = parseDate(i.resolution?.resolvedAt || i.updatedAt);
+      return resolvedAt && resolvedAt >= oneWeekAgo;
+    }).length;
+
+    const communityVerifications = issues.reduce(
+      (sum, i) => sum + (i.verification?.upvotes || 0),
+      0
+    );
+
     return {
-      totalReports: m.totalReports || m.totalIssues || 0,
-      resolvedThisWeek: m.resolvedThisWeek || 0,
-      activeIssues: m.activeIssues || 0,
-      communityVerifications: m.communityVerifications || 0,
+      totalReports,
+      resolvedThisWeek,
+      activeIssues,
+      communityVerifications,
     };
   },
 
   listenToCommunityStats: (callback: (stats: GlobalStats | null) => void) => {
-    return onSnapshot(doc(db, ANALYTICS_COLLECTION, GLOBAL_DOC), (snap) => {
-      if (!snap.exists()) {
-        callback(null);
-        return;
-      }
-      const data = snap.data();
-      const m = (data.metrics as Record<string, number>) || {};
+    return onSnapshot(collection(db, 'issues'), (snap) => {
+      const issues = snap.docs.map(d => d.data());
+      
+      const totalReports = issues.length;
+      const activeIssues = issues.filter(
+        i => i.status === 'reported' || i.status === 'verified' || i.status === 'in_progress'
+      ).length;
+      
+      const oneWeekAgo = new Date();
+      oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
+      const resolvedThisWeek = issues.filter(i => {
+        if (i.status !== 'resolved') return false;
+        const resolvedAt = parseDate(i.resolution?.resolvedAt || i.updatedAt);
+        return resolvedAt && resolvedAt >= oneWeekAgo;
+      }).length;
+
+      const communityVerifications = issues.reduce(
+        (sum, i) => sum + (i.verification?.upvotes || 0),
+        0
+      );
+
       callback({
-        totalReports: m.totalReports || m.totalIssues || 0,
-        resolvedThisWeek: m.resolvedThisWeek || 0,
-        activeIssues: m.activeIssues || 0,
-        communityVerifications: m.communityVerifications || 0,
+        totalReports,
+        resolvedThisWeek,
+        activeIssues,
+        communityVerifications,
       });
     });
   },
 
   getDailyMetrics: async (dateStr: string): Promise<DailyMetrics | null> => {
-    const docRef = doc(db, ANALYTICS_COLLECTION, `daily_${dateStr}`);
-    const snap = await getDoc(docRef);
-    if (!snap.exists()) return null;
-    return pluckMetrics(snap.data() as Record<string, unknown>) as unknown as DailyMetrics;
+    const snap = await getDocs(collection(db, 'issues'));
+    const issues = snap.docs.map(d => d.data());
+    
+    const dayIssues = issues.filter(i => {
+      const d = parseDate(i.createdAt);
+      return d && getDateStr(d) === dateStr;
+    });
+
+    const upvotes = dayIssues.reduce((sum, i) => sum + (i.verification?.upvotes || 0), 0);
+
+    return {
+      newIssues: dayIssues.length,
+      verifications: upvotes,
+      comments: 0,
+    };
   },
 
   listenToDailyMetrics: (dateStr: string, callback: (metrics: DailyMetrics | null) => void) => {
-    return onSnapshot(doc(db, ANALYTICS_COLLECTION, `daily_${dateStr}`), (snap) => {
-      callback(snap.exists() ? (pluckMetrics(snap.data() as Record<string, unknown>) as unknown as DailyMetrics) : null);
+    return onSnapshot(collection(db, 'issues'), (snap) => {
+      const issues = snap.docs.map(d => d.data());
+      const dayIssues = issues.filter(i => {
+        const d = parseDate(i.createdAt);
+        return d && getDateStr(d) === dateStr;
+      });
+      const upvotes = dayIssues.reduce((sum, i) => sum + (i.verification?.upvotes || 0), 0);
+      callback({
+        newIssues: dayIssues.length,
+        verifications: upvotes,
+        comments: 0,
+      });
     });
   },
 
   getCategoryBreakdown: async (): Promise<CategoryMetric[]> => {
-    const q = query(collection(db, ANALYTICS_COLLECTION), where('scope', '==', 'category'));
-    const snap = await getDocs(q);
-    return snap.docs.map((d) => {
-      const data = d.data();
-      const metrics = pluckMetrics(data);
-      return {
-        category: d.id.replace('category_', ''),
-        reportCount: (metrics.reportCount ?? 0) as number,
-      };
+    const snap = await getDocs(collection(db, 'issues'));
+    const counts: Record<string, number> = {};
+    
+    snap.docs.forEach((d) => {
+      const issue = d.data();
+      const cat = issue.category || 'other';
+      counts[cat] = (counts[cat] || 0) + 1;
     });
+
+    return Object.entries(counts).map(([category, reportCount]) => ({
+      category,
+      reportCount,
+    }));
   },
 
   getStatusDistribution: async (): Promise<StatusMetric[]> => {
-    const q = query(collection(db, ANALYTICS_COLLECTION), where('scope', '==', 'status'));
-    const snap = await getDocs(q);
-    return snap.docs.map((d) => {
-      const data = d.data();
-      const metrics = pluckMetrics(data);
-      return {
-        status: d.id.replace('status_', ''),
-        issueCount: (metrics.issueCount ?? 0) as number,
-      };
+    const snap = await getDocs(collection(db, 'issues'));
+    const counts: Record<string, number> = {};
+    
+    snap.docs.forEach((d) => {
+      const issue = d.data();
+      const status = issue.status || 'reported';
+      counts[status] = (counts[status] || 0) + 1;
     });
+
+    return Object.entries(counts).map(([status, issueCount]) => ({
+      status,
+      issueCount,
+    }));
   },
 
   getImpactMetrics: async (days: number = 7): Promise<ImpactMetrics> => {
+    const issuesSnap = await getDocs(collection(db, 'issues'));
+    const issuesList = issuesSnap.docs.map(d => d.data());
+    
+    const commentsSnap = await getDocs(collection(db, 'comments'));
+    const commentsList = commentsSnap.docs.map(d => d.data());
+
     const results: ImpactDay[] = [];
     let totalIssues = 0;
     let totalVerifications = 0;
     let totalComments = 0;
 
     const today = new Date();
-    const reads: Promise<void>[] = [];
+    today.setHours(23, 59, 59, 999);
 
     for (let i = days - 1; i >= 0; i--) {
-      const d = new Date(today);
-      d.setDate(d.getDate() - i);
+      const d = new Date();
+      d.setDate(today.getDate() - i);
       const dateStr = getDateStr(d);
-      reads.push(
-        AnalyticsService.getDailyMetrics(dateStr).then((metrics) => {
-          const m = metrics ?? {};
-          const ni = m.newIssues ?? 0;
-          const ve = m.verifications ?? 0;
-          const co = m.comments ?? 0;
-          results.push({ date: dateStr, newIssues: ni, verifications: ve, comments: co });
-          totalIssues += ni;
-          totalVerifications += ve;
-          totalComments += co;
-        }),
-      );
-    }
+      
+      const dayIssues = issuesList.filter(issue => {
+        const createdAt = parseDate(issue.createdAt);
+        return createdAt && getDateStr(createdAt) === dateStr;
+      });
+      
+      const dayComments = commentsList.filter(comment => {
+        const createdAt = parseDate(comment.createdAt);
+        return createdAt && getDateStr(createdAt) === dateStr;
+      });
 
-    await Promise.all(reads);
+      const dayVerifications = dayIssues.reduce((sum, issue) => sum + (issue.verification?.upvotes || 0), 0);
+
+      results.push({
+        date: dateStr,
+        newIssues: dayIssues.length,
+        verifications: dayVerifications,
+        comments: dayComments.length,
+      });
+
+      totalIssues += dayIssues.length;
+      totalVerifications += dayVerifications;
+      totalComments += dayComments.length;
+    }
 
     return { days: results, totalIssues, totalVerifications, totalComments };
   },
