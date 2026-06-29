@@ -12,7 +12,7 @@ import {
 } from '../services/analyticsService';
 import { enrichIssueOnCreate } from '../services/issueService';
 
-export const onIssueCreated = onDocumentCreated(
+export const handleIssueCreated = onDocumentCreated(
   'issues/{issueId}',
   async (
     event: FirestoreEvent<
