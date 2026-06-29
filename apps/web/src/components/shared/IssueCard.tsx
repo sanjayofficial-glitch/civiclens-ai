@@ -58,6 +58,11 @@ export function IssueCard({
                 <div className="mt-1 flex flex-wrap items-center gap-1.5">
                   <Badge className={status.softBadge}>{status.label}</Badge>
                   <Badge className={severity.softBadge}>{severity.label}</Badge>
+                  {issue.verification?.upvotes > 0 && (
+                    <Badge variant="secondary" className="gap-1 bg-green-500/10 text-green-700 dark:text-green-400 border-green-500/20">
+                      👍 {issue.verification.upvotes} {issue.verification.upvotes === 1 ? 'verification' : 'verifications'}
+                    </Badge>
+                  )}
                 </div>
                 <p className="mt-1 flex items-center gap-1 text-xs text-muted-foreground">
                   <MapPin className="size-3" aria-hidden="true" />
@@ -116,6 +121,11 @@ export function IssueCard({
                   <Badge className={status.softBadge}>{status.label}</Badge>
                 ) : null}
                 <Badge className={severity.softBadge}>{severity.label}</Badge>
+                {issue.verification?.upvotes > 0 && (
+                  <Badge variant="secondary" className="gap-1 bg-green-500/10 text-green-700 dark:text-green-400 border-green-500/20">
+                    👍 {issue.verification.upvotes}
+                  </Badge>
+                )}
               </div>
               <span className="text-xs text-muted-foreground">
                 {formatRelativeTime(String(issue.createdAt))}

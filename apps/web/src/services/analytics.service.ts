@@ -65,12 +65,31 @@ export const AnalyticsService = {
   getCommunityStats: async (): Promise<GlobalStats | null> => {
     const docRef = doc(db, ANALYTICS_COLLECTION, GLOBAL_DOC);
     const snap = await getDoc(docRef);
-    return snap.exists() ? (snap.data() as GlobalStats) : null;
+    if (!snap.exists()) return null;
+    const data = snap.data();
+    const m = (data.metrics as Record<string, number>) || {};
+    return {
+      totalReports: m.totalReports || m.totalIssues || 0,
+      resolvedThisWeek: m.resolvedThisWeek || 0,
+      activeIssues: m.activeIssues || 0,
+      communityVerifications: m.communityVerifications || 0,
+    };
   },
 
   listenToCommunityStats: (callback: (stats: GlobalStats | null) => void) => {
     return onSnapshot(doc(db, ANALYTICS_COLLECTION, GLOBAL_DOC), (snap) => {
-      callback(snap.exists() ? (snap.data() as GlobalStats) : null);
+      if (!snap.exists()) {
+        callback(null);
+        return;
+      }
+      const data = snap.data();
+      const m = (data.metrics as Record<string, number>) || {};
+      callback({
+        totalReports: m.totalReports || m.totalIssues || 0,
+        resolvedThisWeek: m.resolvedThisWeek || 0,
+        activeIssues: m.activeIssues || 0,
+        communityVerifications: m.communityVerifications || 0,
+      });
     });
   },
 

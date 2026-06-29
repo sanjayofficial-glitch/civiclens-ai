@@ -34,7 +34,7 @@ export const onIssueCreated = onDocumentCreated(
       recordDailyMetrics({ newIssues: 1 }),
       recordCategoryMetrics(issue.category ?? 'other'),
       recordStatusMetrics('reported'),
-      recordAnalyticsEvent('global', 'global', { totalIssues: 1 }),
+      recordAnalyticsEvent('global', 'global', { totalReports: 1, activeIssues: 1 }),
     ]);
   },
 );

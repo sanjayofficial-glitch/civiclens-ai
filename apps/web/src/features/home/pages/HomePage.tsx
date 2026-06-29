@@ -9,6 +9,7 @@ import {
   Activity,
   FileText,
   CheckCircle,
+  Settings,
 } from 'lucide-react';
 
 const recentActivityIcons = [CheckCircle, Activity, Trophy] as const;
@@ -21,6 +22,7 @@ import { StatCard, QuickAction } from '@/components/shared/StatCard';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Button } from '@/components/ui/button';
 
 import { useUser } from '@/hooks/data/useUser';
 import { useIssues } from '@/hooks/data/useIssues';
@@ -92,7 +94,16 @@ export default function HomePage() {
       <PageHeader
         title={`${greeting}, ${firstName}`}
         subtitle="Here's what's happening nearby"
-        action={<NotificationBellLink />}
+        action={
+          <div className="flex items-center gap-1">
+            <NotificationBellLink />
+            <Button variant="ghost" size="icon-sm" asChild aria-label="Settings">
+              <Link to="/settings">
+                <Settings className="size-5 text-muted-foreground hover:text-foreground" />
+              </Link>
+            </Button>
+          </div>
+        }
       />
 
       <motion.div

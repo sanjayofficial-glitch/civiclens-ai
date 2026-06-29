@@ -12,6 +12,8 @@ import {
   Award,
   AlertCircle,
 } from 'lucide-react';
+import { updateProfile as updateAuthProfile } from 'firebase/auth';
+import { toast } from 'sonner';
 import { AppLayout, PageHeader } from '@/components/layout/AppLayout';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
@@ -20,6 +22,16 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { IssueCard } from '@/components/shared/IssueCard';
 import { Skeleton } from '@/components/ui/skeleton';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { BADGES, getRankTitle } from '@/lib/constants';
 import { cn } from '@/lib/utils';
 
@@ -28,12 +40,58 @@ import { useIssues } from '@/hooks/data/useIssues';
 import { usePullToRefresh } from '@/hooks/usePullToRefresh';
 import { AuthService } from '@/services/auth.service';
 import { useAuth } from '@/hooks/useAuth';
+import { auth } from '@/lib/firebase/auth';
+import { UserService } from '@/services/user.service';
 
 export default function ProfilePage() {
   const [refreshKey, setRefreshKey] = useState(0);
 
   const { user: authUser } = useAuth();
   const { user, loading: userLoading } = useUser();
+
+  // Edit profile dialog state
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [editName, setEditName] = useState('');
+  const [editPhone, setEditPhone] = useState('');
+  const [editPhoto, setEditPhoto] = useState('');
+  const [updating, setUpdating] = useState(false);
+
+  const openEditDialog = useCallback(() => {
+    setEditName(user?.displayName || authUser?.displayName || '');
+    setEditPhone(user?.phoneNumber || '');
+    setEditPhoto(user?.photoURL || '');
+    setIsEditDialogOpen(true);
+  }, [user, authUser]);
+
+  const handleSaveProfile = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!authUser) return;
+    if (!editName.trim()) {
+      toast.error('Name cannot be empty.');
+      return;
+    }
+    setUpdating(true);
+    try {
+      if (auth.currentUser) {
+        await updateAuthProfile(auth.currentUser, {
+          displayName: editName.trim(),
+          photoURL: editPhoto.trim() || null,
+        });
+      }
+      await UserService.updateProfile(authUser.uid, {
+        displayName: editName.trim(),
+        phoneNumber: editPhone.trim() || null,
+        photoURL: editPhoto.trim() || null,
+      });
+      toast.success('Profile updated successfully!');
+      setIsEditDialogOpen(false);
+    } catch (err) {
+      console.error('Failed to update profile:', err);
+      toast.error('Failed to update profile. Please try again.');
+    } finally {
+      setUpdating(false);
+    }
+  };
 
   // Only start the issues query once we know the user UID — avoids the
   // double-subscription (first with undefined, then with reporterId)
@@ -75,17 +133,14 @@ export default function ProfilePage() {
       : issues.length
     : (user?.issuesReported ?? 0);
 
-  const verifiedCount = issueFilters
-    ? issuesLoading
-      ? (user?.issuesVerified ?? 0)
-      : issues.filter(
-          (i) => i.status === 'verified' || i.status === 'resolved' || i.status === 'in_progress',
-        ).length
-    : (user?.issuesVerified ?? 0);
+  const totalVerificationsReceived = useMemo(() => {
+    if (issuesLoading || !issues) return 0;
+    return issues.reduce((sum, issue) => sum + (issue.verification?.upvotes || 0), 0);
+  }, [issues, issuesLoading]);
 
   const statCards = [
     { value: reportCount,        label: 'Reports',  icon: FileText,    color: 'text-primary' as const },
-    { value: verifiedCount,      label: 'Verified', icon: CheckCircle2, color: 'text-green-500' as const },
+    { value: totalVerificationsReceived, label: 'Verifications', icon: CheckCircle2, color: 'text-green-500' as const },
     { value: earnedBadges.length, label: 'Badges',  icon: Award,       color: 'text-yellow-500' as const },
   ];
 
@@ -163,6 +218,9 @@ export default function ProfilePage() {
                     <Badge className="capitalize">{user.role}</Badge>
                   )}
                 </div>
+                <Button variant="outline" size="sm" className="mt-4" onClick={openEditDialog}>
+                  Edit Profile
+                </Button>
               </>
             )}
           </div>
@@ -323,6 +381,65 @@ export default function ProfilePage() {
           </nav>
         </div>
       </div>
+
+      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+        <DialogContent className="sm:max-w-md">
+          <form onSubmit={handleSaveProfile} className="space-y-4">
+            <DialogHeader>
+              <DialogTitle>Edit Profile</DialogTitle>
+              <DialogDescription>
+                Update your personal details. These will be visible to other community members.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-3">
+              <div className="space-y-1">
+                <Label htmlFor="displayName">Name</Label>
+                <Input
+                  id="displayName"
+                  value={editName}
+                  onChange={(e) => setEditName(e.target.value)}
+                  placeholder="Your name"
+                  required
+                  disabled={updating}
+                />
+              </div>
+              <div className="space-y-1">
+                <Label htmlFor="phoneNumber">Phone Number</Label>
+                <Input
+                  id="phoneNumber"
+                  value={editPhone}
+                  onChange={(e) => setEditPhone(e.target.value)}
+                  placeholder="Your phone number"
+                  disabled={updating}
+                />
+              </div>
+              <div className="space-y-1">
+                <Label htmlFor="photoURL">Avatar URL</Label>
+                <Input
+                  id="photoURL"
+                  value={editPhoto}
+                  onChange={(e) => setEditPhoto(e.target.value)}
+                  placeholder="Avatar image URL"
+                  disabled={updating}
+                />
+              </div>
+            </div>
+            <DialogFooter className="sm:justify-end">
+              <Button
+                type="button"
+                variant="ghost"
+                onClick={() => setIsEditDialogOpen(false)}
+                disabled={updating}
+              >
+                Cancel
+              </Button>
+              <Button type="submit" disabled={updating}>
+                {updating ? 'Saving...' : 'Save Changes'}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
     </AppLayout>
   );
 }

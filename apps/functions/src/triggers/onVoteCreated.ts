@@ -2,7 +2,7 @@ import { onDocumentCreated } from 'firebase-functions/v2/firestore';
 
 import { DEFAULT_REPUTATION } from '../config';
 import { db } from '../lib/firebase';
-import { recordDailyMetrics } from '../services/analyticsService';
+import { recordDailyMetrics, recordAnalyticsEvent } from '../services/analyticsService';
 import {
   checkAndAwardBadges,
   updateActivityStreak,
@@ -38,6 +38,7 @@ export const onVoteCreated = onDocumentCreated(
 
     if (vote.type === 'upvote') {
       await recordDailyMetrics({ verifications: 1 });
+      await recordAnalyticsEvent('global', 'global', { communityVerifications: 1 });
     }
 
     const issueSnap = await db.collection('issues').doc(vote.issueId).get();
