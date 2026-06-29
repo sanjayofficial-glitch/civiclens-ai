@@ -6,6 +6,8 @@ export const commentSchema = z.object({
   issueId: z.string().min(1),
   userId: z.string().min(1),
   text: z.string().min(1).max(2000),
+  userName: z.string().optional(),
+  userPhoto: z.string().url().nullable().optional(),
   createdAt: timestampSchema,
 });
 

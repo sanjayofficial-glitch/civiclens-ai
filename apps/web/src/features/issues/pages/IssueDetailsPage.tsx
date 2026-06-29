@@ -25,7 +25,7 @@ import { toast } from 'sonner';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Textarea } from '@/components/ui/textarea';
 import { Skeleton } from '@/components/ui/skeleton';
 import { ErrorState } from '@/components/ui/error-state';
@@ -167,7 +167,13 @@ export default function IssueDetailsPage() {
     setCommentText('');
     setDeletingComment(true);
     try {
-      await CommentService.create({ issueId: id, userId: user.uid, text });
+      await CommentService.create({
+        issueId: id,
+        userId: user.uid,
+        text,
+        userName: user.displayName || 'Citizen',
+        userPhoto: user.photoURL || null,
+      });
     } catch {
       toast.error('Failed to post comment. Please try again.');
       setCommentText(text);
@@ -505,12 +511,13 @@ export default function IssueDetailsPage() {
                 comments.map((c) => (
                   <div key={c.id} className="flex gap-3">
                     <Avatar className="size-8 shrink-0">
+                      {c.userPhoto && <AvatarImage src={c.userPhoto} alt={c.userName || 'Citizen'} />}
                       <AvatarFallback className="bg-primary/10 text-xs text-primary">
-                        {c.userId.substring(0, 2).toUpperCase()}
+                        {(c.userName || 'Citizen').slice(0, 2).toUpperCase()}
                       </AvatarFallback>
                     </Avatar>
                     <div className="flex-1 rounded-2xl glass-light px-3 py-2 border border-white/5 dark:border-border/50">
-                      <p className="text-xs font-medium">Citizen {c.userId.substring(0, 4).toUpperCase()}</p>
+                      <p className="text-xs font-medium">{c.userName || `Citizen ${c.userId.substring(0, 4).toUpperCase()}`}</p>
                       <p className="mt-0.5 text-sm">{c.text}</p>
                       <p className="mt-1 text-[10px] text-muted-foreground">
                         {formatRelativeTime(c.createdAt)}

@@ -101,6 +101,8 @@ export interface Comment {
   userId: string;
   text: string;
   createdAt: TimestampInput;
+  userName?: string;
+  userPhoto?: string | null;
 }
 
 export interface Notification {

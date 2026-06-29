@@ -17,10 +17,15 @@ export const addComment = onCall(async (request) => {
     request.data ?? {},
   );
 
+  const userSnap = await db.collection('users').doc(request.auth.uid).get();
+  const userData = userSnap.data();
+
   const commentRef = await db.collection('comments').add({
     issueId: input.issueId,
     userId: request.auth.uid,
     text: input.text,
+    userName: userData?.displayName || 'Citizen',
+    userPhoto: userData?.photoURL || null,
     createdAt: FieldValue.serverTimestamp(),
   });
 
