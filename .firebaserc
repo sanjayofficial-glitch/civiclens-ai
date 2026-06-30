@@ -1,5 +1,11 @@
 {
   "projects": {
     "default": "blockseblock-81d99"
+  },
+  "targets": {},
+  "etags": {
+    "blockseblock-81d99": {
+      "extensionInstances": {}
+    }
   }
 }
