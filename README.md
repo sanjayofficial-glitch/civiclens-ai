@@ -133,7 +133,7 @@ firebase deploy
 
 ## 👥 Team Information
 
-- **[Your Name]** - Principal DevOps Engineer & Senior Software Engineer
+- **Sanjaya Sahu** - Principal DevOps Engineer & Senior Software Engineer
 
 ## 📄 License
 
