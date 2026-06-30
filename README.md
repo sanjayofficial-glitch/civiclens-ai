@@ -29,6 +29,18 @@ CivicLens leverages **Google Gemini 1.5 Flash** for high-speed, accurate image a
 - **Smart Suggestions:** Auto-generates concise titles, descriptions, and searchable tags based on visual evidence.
 - **Duplicate Detection:** Intelligent fallback to prevent multiple reports of the same incident in close proximity.
 
+## 📸 App Screenshots
+
+### Mobile Experience
+| Splash Screen | Snap & Report | Map Onboarding | Recognition | Welcome |
+|:---:|:---:|:---:|:---:|:---:|
+| <img src="docs/app-screenshots/mockup_01_civic_lens.png" width="200" /> | <img src="docs/app-screenshots/mockup_02_snap_report.png" width="200" /> | <img src="docs/app-screenshots/mockup_03_map_onboarding.png" width="200" /> | <img src="docs/app-screenshots/mockup_04_recognition_screen.png" width="200" /> | <img src="docs/app-screenshots/mockup_05_welcome_screen.png" width="200" /> |
+
+### Features & Dashboards
+| Home Dashboard | Interactive Map | Community Impact | User Profile | Leaderboard |
+|:---:|:---:|:---:|:---:|:---:|
+| <img src="docs/app-screenshots/mockup_06_home_dashboard.png" width="200" /> | <img src="docs/app-screenshots/mockup_07_interactive_map.png" width="200" /> | <img src="docs/app-screenshots/mockup_08_community_impact.png" width="200" /> | <img src="docs/app-screenshots/mockup_09_user_profile.png" width="200" /> | <img src="docs/app-screenshots/mockup_10_leaderboard_screen.png" width="200" /> |
+
 ## 🛠 Technology Stack
 
 **Frontend:**
@@ -57,13 +69,6 @@ Firebase (Firestore + Auth + Storage + Cloud Functions + Hosting)
 ```
 - **Schema-First Design:** Zod schemas in the shared package act as the single source of truth.
 - **Robust Security:** Granular Firestore and Storage security rules based on role-based access control (RBAC).
-
-## 📸 Screenshots
-
-| Home Dashboard | Issue Map | Government Dashboard |
-|:---:|:---:|:---:|
-| <img src="docs/screenshot-home.png" width="250" /> | <img src="docs/screenshot-map.png" width="250" /> | <img src="docs/screenshot-gov.png" width="250" /> |
-
 
 ## 🚀 Installation & Setup
 
