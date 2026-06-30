@@ -21,13 +21,35 @@
 - **Government Dashboard:** Advanced triage queue, analytical charts, and status management for officials.
 - **Real-Time Notifications:** Live updates on issue statuses, new comments, and earned badges.
 
-## 🤖 AI Capabilities
+## 🤖 AI Capabilities & Google AI Studio Integration
 
 CivicLens leverages **Google Gemini 1.5 Flash** for high-speed, accurate image and text analysis:
 - **Auto-Categorization:** Determines if an issue is a pothole, electrical hazard, vandalism, etc.
 - **Severity Assessment:** Evaluates the danger level (Low, Medium, High, Critical).
 - **Smart Suggestions:** Auto-generates concise titles, descriptions, and searchable tags based on visual evidence.
 - **Duplicate Detection:** Intelligent fallback to prevent multiple reports of the same incident in close proximity.
+
+### 🛠 How Google AI Studio Empowered Development
+
+Google AI Studio was critical in prototyping and building CivicLens. Here is how it accelerated the development process:
+
+1.  **System Prompt Prototyping**: We iteratively developed the Gemini system instructions within AI Studio's playground. Testing ~30 variations allowed us to fine-tune how the model distinguishes between minor issues (e.g., small graffiti) and major hazards (e.g., water main breaks).
+2.  **Structured Outputs**: We defined the required JSON schema directly inside AI Studio to ensure the model returns a predictable payload. This aligns perfectly with our Zod schemas in `packages/shared/src/schemas` to guarantee frontend type safety.
+3.  **Safety & Privacy Triage**: We used AI Studio's safety settings to handle reports containing faces (privacy protection) and dangerous conditions. If a major threat (e.g., active fires) is detected, it returns a `safetyConcern` flag to instantly alert city officials.
+4.  **Latency Benchmarking & Compression**: Testing response times inside AI Studio guided our choice of client-side image compression (max 800px width, 75% quality), keeping payloads small for fast mobile uploads.
+5.  **Code Scaffolding**: Using AI Studio's "Get Code" feature, we quickly exported initial JavaScript/curl configurations directly into our backend service (`geminiService.ts`).
+
+## 📸 App Screenshots
+
+### Mobile Experience
+| Splash Screen | Snap & Report | Map Onboarding | Recognition | Welcome |
+|:---:|:---:|:---:|:---:|:---:|
+| <img src="docs/app-screenshots/mockup_01_civic_lens.png" width="200" /> | <img src="docs/app-screenshots/mockup_02_snap_report.png" width="200" /> | <img src="docs/app-screenshots/mockup_03_map_onboarding.png" width="200" /> | <img src="docs/app-screenshots/mockup_04_recognition_screen.png" width="200" /> | <img src="docs/app-screenshots/mockup_05_welcome_screen.png" width="200" /> |
+
+### Features & Dashboards
+| Home Dashboard | Interactive Map | Community Impact | User Profile | Leaderboard |
+|:---:|:---:|:---:|:---:|:---:|
+| <img src="docs/app-screenshots/mockup_06_home_dashboard.png" width="200" /> | <img src="docs/app-screenshots/mockup_07_interactive_map.png" width="200" /> | <img src="docs/app-screenshots/mockup_08_community_impact.png" width="200" /> | <img src="docs/app-screenshots/mockup_09_user_profile.png" width="200" /> | <img src="docs/app-screenshots/mockup_10_leaderboard_screen.png" width="200" /> |
 
 ## 🛠 Technology Stack
 
@@ -57,13 +79,6 @@ Firebase (Firestore + Auth + Storage + Cloud Functions + Hosting)
 ```
 - **Schema-First Design:** Zod schemas in the shared package act as the single source of truth.
 - **Robust Security:** Granular Firestore and Storage security rules based on role-based access control (RBAC).
-
-## 📸 Screenshots
-
-| Home Dashboard | Issue Map | Government Dashboard |
-|:---:|:---:|:---:|
-| <img src="docs/screenshot-home.png" width="250" /> | <img src="docs/screenshot-map.png" width="250" /> | <img src="docs/screenshot-gov.png" width="250" /> |
-
 
 ## 🚀 Installation & Setup
 
@@ -133,7 +148,7 @@ firebase deploy
 
 ## 👥 Team Information
 
-- **[Your Name]** - Principal DevOps Engineer & Senior Software Engineer
+- **Sanjaya Sahu** - Student & Vibe Coder
 
 ## 📄 License
 
