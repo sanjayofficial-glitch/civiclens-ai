@@ -512,16 +512,7 @@ const leaderboardEntries = [
 
 export const seedDemo = onRequest({ invoker: 'public' }, async (_req, res) => {
   logger.info('Starting seed...');
-  const results: string[] = [];
   try {
-    results.push('handler started');
-    const testDoc = db.collection('_seed_test').doc('ping');
-    results.push('got doc ref');
-    await testDoc.set({ ts: Date.now(), message: 'seed test' });
-    results.push('wrote test doc');
-    await testDoc.delete();
-    results.push('deleted test doc');
-
     const batch = db.batch();
     let ops = 0;
     const add = (collection: string, id: string, data: object) => {
@@ -529,7 +520,6 @@ export const seedDemo = onRequest({ invoker: 'public' }, async (_req, res) => {
       ops++;
     };
 
-    results.push('starting data writes');
     add('users', DEMO_USER.uid, DEMO_USER);
     add('users', SECOND_USER.uid, SECOND_USER);
     add('users', OFFICIAL_USER.uid, OFFICIAL_USER);
@@ -546,13 +536,11 @@ export const seedDemo = onRequest({ invoker: 'public' }, async (_req, res) => {
       add('leaderboard', `${lb.period}_${lb.userId}`, lb);
 
     await batch.commit();
-    results.push('batch committed');
     logger.info(`Seeded ${String(ops)} documents`);
-    res.status(200).json({ status: 'ok', count: ops, results });
+    res.status(200).json({ status: 'ok', count: ops });
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
-    results.push(`ERROR: ${message}`);
     logger.error('Seed failed', err);
-    res.status(500).json({ status: 'error', message, results });
+    res.status(500).json({ status: 'error', message });
   }
 });
