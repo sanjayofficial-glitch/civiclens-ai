@@ -1,26 +1,16 @@
 # CivicLens AI
 
 <div align="center">
-  <img src="docs/placeholder-logo.png" alt="CivicLens Logo" width="200" height="200" />
+  <img src="docs/logo.png" alt="CivicLens AI Logo" width="200" height="200" />
   <h3>AI-Powered Civic Issue Reporting & Management Platform</h3>
   <p>Empowering citizens and local governments to collaborate on urban improvements through artificial intelligence and real-time data.</p>
 </div>
 
 ---
 
-## 📖 Project Overview
+## 💡 About CivicLens AI
 
-**CivicLens AI** is a fully-implemented civic tech platform designed to bridge the gap between community members and local government officials. It streamlines the reporting, verification, and resolution of urban issues like potholes, broken streetlights, and graffiti, fostering transparency and active citizen engagement.
-
-## ⚠️ Problem Statement
-
-Urban infrastructure problems often go unreported due to complex bureaucratic processes, lack of transparency, and poor feedback loops for citizens. Even when reported, governments struggle to triage, categorize, and prioritize issues effectively without significant manual overhead.
-
-## 💡 Solution
-
-CivicLens AI solves this by introducing a seamless, AI-assisted reporting flow. Citizens can report an issue simply by taking a photo. Our integrated AI automatically analyzes the image, identifies the problem, estimates the severity, and suggests actionable descriptions. 
-
-For government officials, CivicLens provides a comprehensive dashboard to track, assign, and resolve issues efficiently, complete with analytics and mapping tools.
+**CivicLens AI** is an innovative, AI-powered civic tech platform that empowers citizens and local governments to collaboratively address urban challenges. It streamlines the process of reporting, verifying, and resolving community issues such as potholes, broken streetlights, and graffiti. By leveraging advanced artificial intelligence, CivicLens AI enhances transparency, fosters active citizen engagement, and provides government officials with efficient tools for issue management and resolution. Citizens can easily report problems with a photo, which our integrated AI analyzes to automatically categorize, assess severity, and suggest actionable descriptions. This ensures that urban infrastructure problems are promptly identified, prioritized, and resolved, improving urban environments for everyone.
 
 ## ✨ Features
 
@@ -72,9 +62,8 @@ Firebase (Firestore + Auth + Storage + Cloud Functions + Hosting)
 
 | Home Dashboard | Issue Map | Government Dashboard |
 |:---:|:---:|:---:|
-| <img src="docs/placeholder-home.png" width="250" /> | <img src="docs/placeholder-map.png" width="250" /> | <img src="docs/placeholder-gov.png" width="250" /> |
+| <img src="docs/screenshot-home.png" width="250" /> | <img src="docs/screenshot-map.png" width="250" /> | <img src="docs/screenshot-gov.png" width="250" /> |
 
-*(Note: Replace placeholders with actual application screenshots before submission).*
 
 ## 🚀 Installation & Setup
 
