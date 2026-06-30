@@ -5,7 +5,10 @@
   "targets": {},
   "etags": {
     "blockseblock-81d99": {
-      "extensionInstances": {}
+      "extensionInstances": {
+        "delete-user-data": "33c5e30ba147f15505b6385741aa299c217bb61543c35e4f52631b89ba26898a",
+        "storage-resize-images": "326e7baa04add399576610f3cc13a3dd9dd03fffdc6254ad42772b0ebc0cb368"
+      }
     }
   }
 }
