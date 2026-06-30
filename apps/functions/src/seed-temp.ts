@@ -1,9 +1,7 @@
-import * as admin from 'firebase-admin';
 import * as logger from 'firebase-functions/logger';
 import { onRequest } from 'firebase-functions/v2/https';
 
-const Timestamp = admin.firestore.Timestamp;
-const GeoPoint = admin.firestore.GeoPoint;
+import { db, Timestamp, GeoPoint } from './lib/firebase';
 
 const ts = (daysAgo: number) =>
   Timestamp.fromDate(new Date(Date.now() - daysAgo * 86400000));
@@ -512,11 +510,9 @@ const leaderboardEntries = [
   },
 ];
 
-export const seedDemo = onRequest(async (_req, res) => {
+export const seedDemo = onRequest({ invoker: 'public' }, async (_req, res) => {
   logger.info('Starting seed...');
   try {
-    const db = admin.firestore();
-    db.settings({ ignoreUndefinedProperties: true });
     const batch = db.batch();
     let ops = 0;
     const add = (collection: string, id: string, data: object) => {
