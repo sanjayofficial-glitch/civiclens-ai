@@ -1,35 +1,38 @@
 steps:
-  # 1. Build the container image using Dockerfile and passing build-args
+  # 1. Install dependencies
+  - name: 'gcr.io/cloud-builders/npm'
+    args: ['install']
+
+  # 2. Build the application with injected environment variables
+  - name: 'gcr.io/cloud-builders/npm'
+    args: ['run', 'build']
+    env:
+      - 'VITE_FIREBASE_API_KEY=$_VITE_FIREBASE_API_KEY'
+      - 'VITE_FIREBASE_AUTH_DOMAIN=$_VITE_FIREBASE_AUTH_DOMAIN'
+      - 'VITE_FIREBASE_PROJECT_ID=$_VITE_FIREBASE_PROJECT_ID'
+      - 'VITE_FIREBASE_STORAGE_BUCKET=$_VITE_FIREBASE_STORAGE_BUCKET'
+      - 'VITE_FIREBASE_MESSAGING_SENDER_ID=$_VITE_FIREBASE_MESSAGING_SENDER_ID'
+      - 'VITE_FIREBASE_APP_ID=$_VITE_FIREBASE_APP_ID'
+      - 'VITE_FIREBASE_MEASUREMENT_ID=$_VITE_FIREBASE_MEASUREMENT_ID'
+      - 'VITE_GEMINI_API_KEY=$_VITE_GEMINI_API_KEY'
+
+  # 3. Build the Nginx container image using the pre-built files
   - name: 'gcr.io/cloud-builders/docker'
     args:
       - 'build'
       - '-t'
       - 'gcr.io/$PROJECT_ID/civiclens-ai:$COMMIT_SHA'
-      - '--build-arg'
-      - 'VITE_FIREBASE_API_KEY=$_VITE_FIREBASE_API_KEY'
-      - '--build-arg'
-      - 'VITE_FIREBASE_AUTH_DOMAIN=$_VITE_FIREBASE_AUTH_DOMAIN'
-      - '--build-arg'
-      - 'VITE_FIREBASE_PROJECT_ID=$_VITE_FIREBASE_PROJECT_ID'
-      - '--build-arg'
-      - 'VITE_FIREBASE_STORAGE_BUCKET=$_VITE_FIREBASE_STORAGE_BUCKET'
-      - '--build-arg'
-      - 'VITE_FIREBASE_MESSAGING_SENDER_ID=$_VITE_FIREBASE_MESSAGING_SENDER_ID'
-      - '--build-arg'
-      - 'VITE_FIREBASE_APP_ID=$_VITE_FIREBASE_APP_ID'
-      - '--build-arg'
-      - 'VITE_FIREBASE_MEASUREMENT_ID=$_VITE_FIREBASE_MEASUREMENT_ID'
-      - '--build-arg'
-      - 'VITE_GEMINI_API_KEY=$_VITE_GEMINI_API_KEY'
+      - '-f'
+      - 'Dockerfile.production'
       - '.'
 
-  # 2. Push the container image to Container Registry
+  # 4. Push the container image to Container Registry
   - name: 'gcr.io/cloud-builders/docker'
     args:
       - 'push'
       - 'gcr.io/$PROJECT_ID/civiclens-ai:$COMMIT_SHA'
 
-  # 3. Deploy container image to Cloud Run
+  # 5. Deploy container image to Cloud Run
   - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
     entrypoint: 'gcloud'
     args:
